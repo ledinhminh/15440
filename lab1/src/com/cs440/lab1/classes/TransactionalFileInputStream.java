@@ -18,12 +18,15 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 		this.position = 0;
 	}
 	
+	
 	private FileInputStream openFile() throws IOException {
 		FileInputStream fs = new FileInputStream(fileName);
 		fs.skip(position);
 		return fs;
 	}
 	
+	/*Reads a single byte from the input stream
+	*/
 	@Override
 	public int read() throws IOException {
 		
@@ -37,6 +40,8 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 		return retVal;
 	}
 	
+	/*Reads up to b.length bytes of data from the input stream
+	*/
 	@Override
 	public int read(byte[] b) throws IOException  {
 		FileInputStream fs = openFile();
@@ -44,19 +49,21 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 		fs.close();
 		
 		if (retVal != -1)
-			position += 1;
+			position += retVal;
 		
 		return retVal;
 	}
 	
+	/*Reads len bytes into b starting at b[off]
+	*/
 	@Override
 	public int read(byte[] b, int off, int len) throws IOException  {
 		FileInputStream fs = openFile();
-		int retVal = fs.read(b);
+		int retVal = fs.read(b, off, len);
 		fs.close();
 		
 		if (retVal != -1)
-			position += 1;
+			position += retVal;
 		
 		return retVal;
 	}
