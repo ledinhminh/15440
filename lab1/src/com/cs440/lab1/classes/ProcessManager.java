@@ -8,7 +8,7 @@ import java.io.IOException;
 
 class ProcessTable {
 	/*holds a slave's process, and that process's time on this processor*/
-	private int time = 0;
+	private long time = 0;
 	String hostname;
 }
 
@@ -33,12 +33,12 @@ public class ProcessManager {
 
 	}
 
-        //void process_input(byte[]
 	public static void main(String[] argv) throws IOException {
 		int b;
 		byte[] input;
 		long length  = 0;
 		long offset = 0;
+		//process argv
 		if (argv.length == 2) {
 			if (argv[0] != "-c") {
 				System.err.println("ERROR: Bad input");
@@ -51,6 +51,7 @@ public class ProcessManager {
 
 
 		while(true) {
+			//monitor stdin
 			b = System.in.read();
 			if (b != -1) {
 				length = offset;
