@@ -26,7 +26,4 @@ public interface MigratableProcess extends Runnable, Serializable {
 	 * @return The class name of the process and all of its original arguments.
 	 */
 	String toString();
-	
-	
-
 }
