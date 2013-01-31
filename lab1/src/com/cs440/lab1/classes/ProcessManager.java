@@ -2,6 +2,8 @@ package com.cs440.lab1.classes;
 
 import java.util.*;
 import java.io.BufferedReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 //import java.io.FileInputStream;
 import java.io.IOException;
 //import java.io.InputStream;
@@ -25,41 +27,137 @@ class SlaveHost {
 	  hash currently used process id's so
 	  we can efficiently create new processes
 	*/
-	private List<Integer> process_id;
+	private List<Integer> processId;
 	public String getHostName() {
 		return hostname;
 	}
 }
 
 public class ProcessManager {
+	//The port for all the servers to run on
+	private static final int port = 15440;
+	int currentProcessId = 0;
+	//list of slaves that are connected
 	List<SlaveHost> slave_list;
+	//mapping from processID to slave it is on.
+	Map<Integer, SlaveHost> processList;
 	boolean master;
+	ProcessServer server;
 
-	ProcessManager() {	
-
+	public ProcessManager(boolean _isMaster, String masterUrl) {	
+		this.master = _isMaster;
+		server = new ProcessServer(port, this);
 	}
-
-	public static void main(String[] argv) throws IOException {
-		BufferedReader reader;
+	
+	/**
+	 * printProcesses()
+	 * 
+	 * Print to std out the running processes and their arguments
+	 */
+	public void printProcesses() {
+		return;
+	}
+	
+	/**
+	 * sendProcessToSlave: opens a connection to the slave with id slaveId
+	 * and sends it a message to start running process processId
+	 * 
+	 * @param slaveId The id of the slave to send to
+	 * @param processId The id of the process to send
+	 */
+	private void sendProcessToSlave(int slaveId, int processId) {
+		return;
+	}
+	
+	/**
+	 * Reads and deserializes the process with ID _id. 
+	 * 
+	 * @param _id The process ID to read in from disk
+	 * @return The deserialized MigratableProccess with id _id
+	 */
+	private MigratableProcess readProcess(int _id) {
+		String fileName = "processes/process_" + _id;
+		MigratableProcess p;
 		
-		//process argv
-		if (argv.length == 2) {
-			if (argv[0] != "-c") {
-				System.err.println("ERROR: Bad input");
+		TransactionalFileInputStream fileStream = new TransactionalFileInputStream(fileName);
+		
+		try {
+			ObjectInputStream objectStream = new ObjectInputStream(fileStream);
+			p = (MigratableProcess) objectStream.readObject();
+			objectStream.close();
+			fileStream.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			try {
+				fileStream.close();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			}
-			//connect to the master
+			return null;
 		}
-		else if (argv.length != 0) {
-			System.err.println("ERROR: Incorrect # of arguments");
+		
+		return p;
+	}
+	
+	/**
+	 * Suspends, serializes and writes to disk the given process
+	 * 
+	 * @param p The migratableProcess to store
+	 * @param _id The ID of this migratable process
+	 */
+	private void writeProcess(MigratableProcess p, int _id) {
+		//suspend the process so it can be serialized
+		p.suspend();
+		
+		TransactionalFileOutputStream fileStream = new TransactionalFileOutputStream("processes/process_"+_id+".ser");
+		ObjectOutputStream objectStream;
+		
+		try {
+			objectStream = new ObjectOutputStream(fileStream);
+			objectStream.writeObject(p);
+			objectStream.close();
+			fileStream.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
+	}
+	
+	public void startSlave() {}
+	
+	public void startMaster() {
 		//setup the input stream reader
-		reader = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		while(true) {
-			//monitor stdin
+			//monitor stdin for new commands
 			
-			String input = reader.readLine();
-			String[] args = input.split(" ");
+			String input;
+			String[] args;
+			
+			try {
+				input = reader.readLine();
+				args = input.split(" ");
+				if (args.length == 0)
+					continue;
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				return;
+			}
+			
+			if (args[0].equals("ps")) {
+				printProcesses();
+				continue;
+			}
+			else if (args[0].equals("quit")) {
+				//TODO quit
+				break;
+			}
 			
 			//This try/catch block find the specified class and instantiate it.
 			//If there are any failures, it lets the user know and goes back into
@@ -69,7 +167,6 @@ public class ProcessManager {
 				Class<MigratableProcess> processClass = (Class<MigratableProcess>) Class.forName(args[0]);
 				Constructor<MigratableProcess> processConstructor = processClass.getConstructor(String[].class);
 				newProcess = processConstructor.newInstance((Object[])args);
-				
 			} catch (ClassNotFoundException e) {
 				//Couldn't link find that class. stupid user.
 				System.out.println("Could not find class " + args[0]);
@@ -93,12 +190,36 @@ public class ProcessManager {
 				System.out.println("Invocation target exception for " + args[0]);
 				continue;
 			}
+
+			//select a slave to send the process to
+			int slaveId = currentProcessId % slave_list.size();
+			sendProcessToSlave(slaveId, currentProcessId);
 			
-			
-			//Send the new process out to one of the slaves and add it to the registry
-			
-			
-			/*load balance here*/
+			currentProcessId++;
 		}
+	}
+
+	public static void main(String[] argv) throws IOException {
+		ProcessManager pm;
+		//process argv
+		if (argv.length == 2) {
+			if (argv[0] != "-c") {
+				System.err.println("ERROR: Bad input");
+				return;
+			}
+			//setup as slave
+			pm = new ProcessManager(false, argv[1]);
+			pm.startSlave();
+		}
+		else if (argv.length != 0) {
+			System.err.println("ERROR: Incorrect # of arguments");
+			return;
+		}
+		else {
+			//setup as master PM
+			pm = new ProcessManager(true, null);
+			pm.startMaster();
+		}
+		
 	}
 }

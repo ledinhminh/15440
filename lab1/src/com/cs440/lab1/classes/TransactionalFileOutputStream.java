@@ -19,7 +19,6 @@ public class TransactionalFileOutputStream extends OutputStream implements Seria
 		RandomAccessFile file = new RandomAccessFile(fileName, "rws");
 		file.seek(position);
 		return file;
-		
 	}
 	
 	public TransactionalFileOutputStream(String _fileName) {
