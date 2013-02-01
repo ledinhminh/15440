@@ -1,4 +1,4 @@
-package com.cs440.lab1.classes;
+package my440package;
 
 import java.util.*;
 import java.nio.channels.*;
@@ -13,55 +13,56 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
-//import com.cs440.lab1.interfaces.MigratableProcess;
-
-/*class ProcessTable {
-	private long time = 0;
-	String hostname;
-}*/
 
 
-
-
-/* SlaveHost contains methods for load balancing, most importantly
-   a list of processes that its host currently holds
- * the process list is FIFO, so processes that have been on this machine
-   the longest will be packaged and mailed somewhere
+/** SlaveHost contains methods for load balancing, most importantly
+ *  a list of processes that its host currently holds
+ *  the process list is FIFO, so processes that have been on this machine
+ *  the longest will be packaged and mailed somewhere
+ *  @param _sock  The SocketAddress which the master will use to communicate
+ *	          with the slave
 */
 class SlaveHost {
 	private SocketAddress slave_sock;
 	private int process_count;
-	private List<Integer> processId;
+	private List<Integer> process_list;
 
 	SlaveHost(SocketAddress _sock) {
 		slave_sock    = _sock;
 		process_count = 0;
 	}
 
-	public String getHostName() {
-		return hostname;
+	public SocketAddress getSocket() {
+		return slave_sock;
 	}
-	public Integer popProcess() {
-		if (processId.length == 0) {
+	public Integer popProcess() throws Exception {
+		if (processId.size() == 0) {
 			System.err.println("popProcess: No Processes Remain.  Can't pop");
 			throw new Exception();
 		}
 		return processId.remove(0);
 	}
+	public void pushProcess(int _pid, Socket m_sock) throws Exception {
+		process_list.add(_pid);
+		m_sock 
 }
 
 public class ProcessManager {
 	//The port for all the servers to run on
-	//do we need dis?  we have AFS
-	private static final int port = 15440;
+	private static final int MASTER_PORT   = 15440;
+	private static final int SLAVE_PORT    = 15440;
 	private static final String OBJECT_DIR = "/afs/ blah blah kbravo / 440";
-	private int currentProcessId = 0;
+	private int currentProcessId           = 0;
+
 	private ServerSocket master_sock;
-	//list of slaves that are connected
+	
+	//list of slaves that are communicating with the master
 	private List<SlaveHost> slave_list;
+
 	//mapping from processID to slave it is on.
 	private Map<Integer, SlaveHost> processList;
 	private boolean master;
+
 	//private ProcessServer server;
 
 	public ProcessManager(boolean _isMaster, String masterUrl) {	
@@ -86,7 +87,8 @@ public class ProcessManager {
 	 * @param processId The id of the process to send
 	 */
 	private void sendProcessToSlave(int slaveId, int processId) {
-		
+		receiver_slave = slave_list[slaveId];
+			
 		return;
 	}
 	
@@ -99,9 +101,9 @@ public class ProcessManager {
 	private MigratableProcess readProcess(int _id) {
 		String fileName = "processes/process_" + _id;
 		MigratableProcess p;
-		
+
 		TransactionalFileInputStream fileStream = new TransactionalFileInputStream(fileName);
-		
+
 		try {
 			ObjectInputStream objectStream = new ObjectInputStream(fileStream);
 			p = (MigratableProcess) objectStream.readObject();
@@ -122,7 +124,6 @@ public class ProcessManager {
 			}
 			return null;
 		}
-		
 		return p;
 	}
 	
@@ -150,28 +151,52 @@ public class ProcessManager {
 		}
 	}
 	
+	/**
+	 * Starts a new slave host by opening up a socket and listening
+	 * to stuff...sends a server socketaddress to the master so it
+	 * knows where to send stuff
+	 */
 	public void startSlave() {
 	}
 	
-	public void startMaster() {
+	/** 
+	 * Starts a new master host by opening up a master socket
+	 * and monitoring stdin for new commands
+	 */
+	public void startMaster() throws IOException {
 		//setup the input stream reader
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		
 		//open the master socket to communicate with slaves
-		master_sock           = new ServerSocket();
+		try {
+			master_sock           = new ServerSocket(PORT);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			return;
+		}
+
 		//master_sock.configureBlocking(false);
 		
 		while(true) {
 			//monitor stdin for new commands
-			
 			String input;
 			String[] args;
 			Socket slave_sock;
 
+			//accept() creates a new socket for listening to the slave.  all we really 
+			//need is the remote SocketAddress
 			if ((slave_sock = master_sock.accept()) != null) {
-				//create a new slave host and store the remote socket address
-				SlaveHost slave_host = new SlaveHost(slave_sock.getRemoteSocketAddress());
+				//create a new slave host and store the remote serversocket address
+				//the remote server's socketaddress is communicated through an object stream
+				ObjectInputStream slave_ostream = ObjectInputStream(slave_sock.getInputStream());
+				SocketAddress server_sockaddr   = (SocketAddress)slave_ostream.readobject();
+				SlaveHost slave_host = new SlaveHost(server_sockaddr);
 				System.out.println("Connected to " + slave_sock.toString());
+				
+				//add it to our current list of slaves
+				slave_list.add(slave_host);
+				//now we'll act assuming that the slave's serversocket 
+				//is waiting on the master's command
 			}
 			
 			try {
@@ -198,7 +223,7 @@ public class ProcessManager {
 			//the input loop.
 			MigratableProcess newProcess;
 			try {
-				Class<MigratableProcess> processClass = (Class<MigratableProcess>) Class.forName(args[0]);
+				Class<MigratableProcess> processClass = (Class<MigratableProcess>)(Class.forName(args[0]));
 				
 				Constructor<MigratableProcess> processConstructor = processClass.getConstructor(String[].class);
 				
@@ -215,7 +240,7 @@ public class ProcessManager {
 				System.out.println("Could not find proper constructor for " + args[0]);
 				continue;
 			} catch (IllegalArgumentException e) {
-				System.out.println("Iilegal arguments for " + args[0]);
+				System.out.println("Illegal arguments for " + args[0]);
 				continue;
 			} catch (InstantiationException e) {
 				System.out.println("Instantiation Exception for " + args[0]);

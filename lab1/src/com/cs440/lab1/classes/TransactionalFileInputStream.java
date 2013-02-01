@@ -1,4 +1,4 @@
-package com.cs440.lab1.classes;
+package my440package;
 
 import java.io.FileInputStream;
 import java.io.IOException;
