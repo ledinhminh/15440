@@ -20,12 +20,16 @@ public class ProcessServer extends Thread {
 		}
 	}
 	
+	public void stopServer() {
+		serverOn = false;
+	}
+	
 	public void run() {
 		while (serverOn) {
 			try {
 				Socket sock = sSock.accept();
 				
-				ServeThread t = new ServeThread(sock.getInputStream(), sock.getOutputStream(), pm);
+				ServeThread t = new ServeThread(sock.getInputStream(), sock.getOutputStream(), sock.getInetAddress(), pm);
 				t.start();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

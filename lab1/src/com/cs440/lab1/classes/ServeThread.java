@@ -5,15 +5,18 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 
 public class ServeThread extends Thread {
 	ObjectInputStream input;
 	ObjectOutputStream output;
+	InetAddress address;
 	//reference to the pm of this node so it can be notified
 	ProcessManager pm;
 	
-	public ServeThread(InputStream in, OutputStream out, ProcessManager _pm) {
+	public ServeThread(InputStream in, OutputStream out, InetAddress _addr, ProcessManager _pm) {
 		this.pm = _pm;
+		this.address = _addr;
 		
 		try {
 			this.input = new ObjectInputStream(in);
@@ -25,14 +28,14 @@ public class ServeThread extends Thread {
 	}
 	
 	public void run() {
-		ServerCommand c;
+		SlaveMessage m;
 		try {
 			Object o = input.readObject();
-			if (o.getClass() != ServerCommand.class) {
+			if (o.getClass() != SlaveMessage.class) {
 				//well fuck, they didn't send the right object. Fuck um we'll ignore it
 				return;
 			}
-			c = (ServerCommand) o;
+			m = (SlaveMessage) o;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -43,14 +46,10 @@ public class ServeThread extends Thread {
 			return;
 		}
 		
-		if (c.getType().equals("RUN_PROCESS")) {
-			//need to deserialize the process from disk and start chugging with it.
-		}
-		else if (c.getType().equals("STOP_PROCESS")) {
-			//need to stop the given process and serialize it to disk
-		}
-		
-		
+		if (pm.isMaster())
+			pm.master_do(address, m);
+		else
+			pm.slave_do(m);
 		
 	}
 
