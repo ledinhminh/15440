@@ -25,7 +25,7 @@ public class ServeThread extends Thread {
             sock = socket;
 		} catch (IOException e) {
 			// SHIT, THE SHIT IS BROKE AS SHIT. or somethin
-            e.printStackTrace();
+			e.printStackTrace();
 			System.err.println("SHIT, THE SHIT IS BROKE AS SHIT");
 		}
 	}
@@ -33,10 +33,10 @@ public class ServeThread extends Thread {
 	public void run() {
 		SlaveMessage m;
 		try {
-            sock.close();
-            System.out.println("here");
+            		sock.close();
+            		System.out.println("here");
 			Object o = input.readObject();
-            System.out.println("readobj");
+            		System.out.println("readobj");
 			if (o.getClass() != SlaveMessage.class) {
 				//well fuck, they didn't send the right object. Fuck um we'll ignore it
 				return;
@@ -44,7 +44,7 @@ public class ServeThread extends Thread {
 			m = (SlaveMessage) o;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-            System.out.println("kevin bravo");
+            		System.out.println("kevin bravo");
 			e.printStackTrace();
 			return;
 		} catch (ClassNotFoundException e) {
