@@ -10,11 +10,19 @@ class SlaveMessage implements Serializable {
 	
 	private int processId;
 	private char action;
+    private boolean first;
 
 	SlaveMessage(int pid, char act) {
 		processId = pid;
-		action = act;
+		action    = act;
+        first     = false;
 	}
+
+    SlaveMessage(int pid, char act, boolean _first) {
+        first     = _first;
+        processId = pid;
+        action    = act;
+    }
 
 	public int getProcessId() {
 		return processId;
@@ -23,4 +31,8 @@ class SlaveMessage implements Serializable {
 	public char getAction() {
 		return action;
 	}
+    
+    public boolean firstTime() {
+        return first;
+    }
 }

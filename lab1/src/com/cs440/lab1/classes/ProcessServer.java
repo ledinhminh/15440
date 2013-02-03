@@ -16,8 +16,8 @@ public class ProcessServer extends Thread {
 			sSock = new ServerSocket(port);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		    System.err.println("ProcessServer: failed to create Socket");
+        }
 	}
 	
 	public void stopServer() {
@@ -25,16 +25,16 @@ public class ProcessServer extends Thread {
 	}
 	
 	public void run() {
+        System.out.println("ProcessServer run()");
 		while (serverOn) {
 			try {
 				Socket sock = sSock.accept();
-				
-				ServeThread t = new ServeThread(sock.getInputStream(), sock.getOutputStream(), sock.getInetAddress(), pm);
+				ServeThread t = new ServeThread(sock, sock.getInetAddress(), pm);
 				t.start();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			    System.err.println("ProcessServer: failed to create new thread");
+            }
 			
 		}
 	}
