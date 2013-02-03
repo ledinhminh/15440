@@ -1,4 +1,7 @@
-package my440package;
+//package my440package;
+
+
+//TODO send slaves messages for load balancing
 
 import java.util.*;
 import java.nio.channels.*;
@@ -12,64 +15,128 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.Socket;
+import java.net.ServerSocket;
 import java.net.*;
-
+import java.net.InetAddress;
+import java.io.InputStream;
+import java.io.OutputStream;
+/*
+class MigratableProcess {
+	void suspend() {}
+	public String toString() {return null;}
+}	
+*/
 
 /** SlaveHost contains methods for load balancing, most importantly
  *  a list of processes that its host currently holds
  *  the process list is FIFO, so processes that have been on this machine
  *  the longest will be packaged and mailed somewhere
- *  @param _sock  The SocketAddress which the master will use to communicate
+ *  @param _iaddr  The Inet Address which the master will use to communicate
  *	          with the slave
 */
 class SlaveHost {
-	private SocketAddress slave_sock;
+	private InetAddress iaddr;
 	private int process_count;
 	private List<Integer> process_list;
 
-	SlaveHost(SocketAddress _sock) {
-		slave_sock    = _sock;
+	SlaveHost(InetAddress _iaddr) {
+		iaddr         = _iaddr;
 		process_count = 0;
 	}
 
-	public SocketAddress getSocket() {
-		return slave_sock;
+	public InetAddress getInetAddress() {
+		return iaddr;
 	}
-	public Integer popProcess() throws Exception {
-		if (processId.size() == 0) {
-			System.err.println("popProcess: No Processes Remain.  Can't pop");
-			throw new Exception();
+	public Integer popProcess() {
+		try {
+			if (process_list.size() == 0) {
+				System.err.println("popProcess: No Processes Remain.  Can't pop");
+				return new Integer(-1);
+			}
+		} catch (Exception e) {
+			return new Integer(-1);
 		}
-		return processId.remove(0);
+		return process_list.remove(0);
 	}
-	public void pushProcess(int _pid, Socket m_sock) throws Exception {
-		process_list.add(_pid);
-		m_sock 
+	public void pushProcess(int _pid) {
+		try {
+			process_list.add(_pid);
+		} catch (Exception e) {
+			System.err.println("pushProcess " + _pid + " failed");
+		}
+	}
 }
+
+class SlaveMessage {
+	private int processId;
+	private char action;
+
+	SlaveMessage(int pid, char act) {
+		processId = pid;
+		action = act;
+	}
+
+	public int getProcessId() {
+		return processId;
+	}
+
+	public char getAction() {
+		return action;
+	}
+}
+
 
 public class ProcessManager {
 	//The port for all the servers to run on
 	private static final int MASTER_PORT   = 15440;
 	private static final int SLAVE_PORT    = 15440;
 	private static final String OBJECT_DIR = "/afs/ blah blah kbravo / 440";
+	private static final int SOCK_TIMEOUT  = 100;
 	private int currentProcessId           = 0;
+	private String MASTER_HOSTNAME;
 
+	private ServerSocket slaveServerSocket;
 	private ServerSocket master_sock;
-	
+
 	//list of slaves that are communicating with the master
 	private List<SlaveHost> slave_list;
 
 	//mapping from processID to slave it is on.
-	private Map<Integer, SlaveHost> processList;
+	//TODO change the name of processMap...bad style
+	private Map<Integer, SlaveHost> processMap;
+	private Map<InetAddress, SlaveHost> iaddrMap;
+	private Map<Integer, MigratableProcess> pidMap;
+
+	//list of processes that need to be redistributed
+	private List<Integer> suspendedProcesses;
+
 	private boolean master;
 
 	//private ProcessServer server;
 
 	public ProcessManager(boolean _isMaster, String masterUrl) {	
-		this.master = _isMaster;
+		this.master     = _isMaster;
+		MASTER_HOSTNAME = masterUrl;
 		//server = new ProcessServer(port, this);
 	}
 	
+
+	/**
+	 * newProcessId()
+	 * finds a new ProcessId and returns it
+	 * if none are left, return -1
+	 */
+
+	private int newProcessId() {
+		Integer res = 0;
+		while (res <= Integer.MAX_VALUE) {
+			if (!(processMap.containsKey(res))) {
+				return res.intValue();
+			}
+		}
+		return -1;
+	}
 	/**
 	 * printProcesses()
 	 * 
@@ -87,10 +154,10 @@ public class ProcessManager {
 	 * @param processId The id of the process to send
 	 */
 	private void sendProcessToSlave(int slaveId, int processId) {
-		receiver_slave = slave_list[slaveId];
 			
 		return;
 	}
+
 	
 	/**
 	 * Reads and deserializes the process with ID _id. 
@@ -101,7 +168,6 @@ public class ProcessManager {
 	private MigratableProcess readProcess(int _id) {
 		String fileName = "processes/process_" + _id;
 		MigratableProcess p;
-
 		TransactionalFileInputStream fileStream = new TransactionalFileInputStream(fileName);
 
 		try {
@@ -150,31 +216,265 @@ public class ProcessManager {
 			e.printStackTrace();
 		}
 	}
+
+
+	/**
+	 * addNewSlave()
+	 * @param slave_host - the SlaveHost instance to add
+	 * @param iaddr      - the InetAddress to map slave_host to
+	 * adds a new slave to the master's pool of slaves
+	 */
+	private void addNewSlave(SlaveHost slave_host, InetAddress iaddr) {
+		slave_list.add(slave_host);
+		iaddrMap.put(iaddr, slave_host);
+	}
+
+
+	private void master_do(InetAddress iaddr, SlaveMessage msg) {
+		int processId = msg.getProcessId();
+		char action   = msg.getAction();
+		if (processId != -1) {
+			if (action == 'S') {
+				//remove it from the processMap (it's not on
+				//a slave anymore) and add to suspendedProcs
+				//also remove it from the slavehost instance
+				if (iaddr != null) {
+					suspendedProcesses.add(new Integer(processId));
+					processMap.remove(new Integer(processId));
+				}
+			}
+			else if (action == 'T') {
+				//remove from the processMap and pidMap, pop it from
+				//the SlaveHost
+				if (iaddr != null) {
+					processMap.remove(new Integer(processId));
+					pidMap.remove(new Integer(processId));
+				}
+			}
+			else if (action == 'R') {
+				//remove from suspended processes, add to processmap,
+				//add to corresponding SlaveSost instance
+				if (iaddr != null) {
+					suspendedProcesses.remove(new Integer(processId));
+					processMap.put(new Integer(processId), iaddrMap.get(iaddr));
+					iaddrMap.get(iaddr).pushProcess(processId);
+				}
+				else {
+					System.err.println("Failed to add process to running");
+				}
+			}
+		}
+	}
+				
+
 	
+	/**
+	 * readMessageFromSlave()
+	 * @param slave_sock - the Socket from which to read the message
+	 * Takes a socket connected with a slave host and reads the secret message
+	 */
+	private SlaveMessage readMessageFromSlave(Socket slave_sock) {
+		InputStream slave_stream;
+		ObjectInputStream slave_ostream;
+		try {
+			slave_stream  = slave_sock.getInputStream();
+			slave_ostream = new ObjectInputStream(slave_stream);
+		} catch (IOException e) {
+			System.err.println("readMessageFromSlave: setup error");
+			return null;
+		}
+		SlaveMessage msg;
+		try {
+			msg = (SlaveMessage)slave_ostream.readObject();
+		} catch (Exception e) {
+			//TODO maybe send a message back to the slave?
+			System.err.println("readMessageFromSlave: readObject error");
+			msg = null;
+		}
+
+		try {
+			slave_stream.close();
+			slave_ostream.close();
+		} catch (Exception e) {
+			System.err.println("readMessageFromSlave: close error");
+		}
+		return msg;
+	}
+
+	private SlaveMessage readMessageFromMaster(Socket master_sock) {
+		return readMessageFromSlave(master_sock);
+	}
+
+
+	/**
+	 * sendMessageToMaster()
+	 * @param msg - the message to send
+	 */
+	private void sendMessageToMaster(SlaveMessage msg) {
+		Socket sock;
+		OutputStream os;
+		ObjectOutputStream msg_os;
+
+		try {
+			sock   = new Socket(MASTER_HOSTNAME, MASTER_PORT);
+			os     = sock.getOutputStream();
+			msg_os = new ObjectOutputStream(os);
+		} catch (Exception e) {
+			System.err.println("sendMessageToMaster: setup error");
+			return;
+		}
+		
+		try {
+			//write the msg to the master
+			msg_os.writeObject(msg);
+			os.close();
+			msg_os.close();
+			sock.close();
+		} catch (Exception e) {
+			System.err.println("Error in sendMessageToMaster()");
+		}
+	}
+
+	/**
+	 * sendMessageToSlave()
+	 * @param msg  - the message to send
+	 * @param sock - the Socket over which to send it
+	 */
+	private void sendMessageToSlave(SlaveMessage msg, Socket sock) {
+		OutputStream os;
+		ObjectOutputStream msg_os;
+		try {
+			os = sock.getOutputStream();
+			msg_os = new ObjectOutputStream(os);
+		} catch (Exception e) {
+			System.err.println("sendMessageToSlave: setup error");
+			return;
+		}
+
+		try {
+			msg_os.writeObject(msg);
+			os.close();
+			msg_os.close();
+		} catch (Exception e) {
+			System.err.println("Error in sendMessageToSlave() write/close");
+		}
+	}
+		
+		
+		
+
+
+	/**********************************************
+	 * slave_do()				      *
+	 * @param master_msg holds the message        *
+	 * takes a message from the master and does   *
+	 * what it says				      *
+	 **********************************************
+	 */
+
+	private int slave_do(SlaveMessage master_msg) {
+		int processId = master_msg.getProcessId();
+		char action   = master_msg.getAction();
+		char response = action;
+
+		if (processId < 0) return -1;
+
+
+		if (action == 'S') {
+			//suspend the process, send back sus message
+			MigratableProcess process = pidMap.get(processId);
+			process.suspend();
+			writeProcess(process, processId);
+			sendMessageToMaster(master_msg);
+			return 0;
+		}
+		else if (action == 'R') {
+			//start the new process, send back start msg
+			MigratableProcess process = readProcess(processId);
+			if (process != null) process.run();
+			//we can just send the same message back
+			pidMap.put(processId, process);
+			sendMessageToMaster(master_msg);
+			return 0;
+		}
+		else {
+			System.err.println("Bad command: " + action);
+			return -1;
+		}
+
+	}
+
+
+
 	/**
 	 * Starts a new slave host by opening up a socket and listening
 	 * to stuff...sends a server socketaddress to the master so it
 	 * knows where to send stuff
 	 */
-	public void startSlave() {
+	private void startSlave() {
+		//open the slave serversocket to communicate with the master
+		try {
+			slaveServerSocket = new ServerSocket(SLAVE_PORT);
+			//slaveServerSocket.setSoTimeout(SOCK_TIMEOUT);
+		} catch (Exception e) {
+			System.err.println("Slave ServerSocket Creation failed!");
+			e.printStackTrace();
+			return;
+		}
+		///////////////////////////////////////////////
+
+		while(true) {
+			Socket master_sock = null;
+
+			/*******************************************
+			 * THIS BLOCK LISTENS FOR MASTER MESSAGES  *
+		         * AND DOES STUFF			   *
+			 *******************************************
+			 */
+
+			try {
+				master_sock = slaveServerSocket.accept();
+			} catch (SocketTimeoutException e) {
+				master_sock = null;
+			} catch (Exception e) {
+				System.err.println("startSlave: Error creating the socket!");
+			}
+
+
+			if (master_sock != null) {
+				//read the new message and do stuff
+				SlaveMessage master_msg = readMessageFromMaster(master_sock);
+				if (slave_do(master_msg) == -1) {
+					System.err.println("Bad Message: " + master_msg.getProcessId() 
+							  + " " +  master_msg.getAction());
+				}
+				try {
+					master_sock.close();
+				} catch (Exception e) {
+					System.err.println("startSlave: Error closing the socket!");
+				}
+			}
+		}
 	}
 	
 	/** 
 	 * Starts a new master host by opening up a master socket
 	 * and monitoring stdin for new commands
 	 */
-	public void startMaster() throws IOException {
+	private void startMaster() throws IOException {
 		//setup the input stream reader
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		
-		//open the master socket to communicate with slaves
+		//open the master serversocket to communicate with slaves
 		try {
-			master_sock           = new ServerSocket(PORT);
-		} catch (IOException e1) {
-			e1.printStackTrace();
+			master_sock           = new ServerSocket(MASTER_PORT);
+			//set the timeout so accept() doesn't wait forever
+			master_sock.setSoTimeout(SOCK_TIMEOUT);
+		} catch (IOException e) {
+			System.err.println("Master Socket creation failed!");
+			e.printStackTrace();
 			return;
 		}
-
 		//master_sock.configureBlocking(false);
 		
 		while(true) {
@@ -183,22 +483,43 @@ public class ProcessManager {
 			String[] args;
 			Socket slave_sock;
 
+			/********************************************
+			 * THIS BLOCK LISTENS FOR SLAVE MESSAGES    *
+			 ********************************************
+			 */
+
 			//accept() creates a new socket for listening to the slave.  all we really 
 			//need is the remote SocketAddress
-			if ((slave_sock = master_sock.accept()) != null) {
+			try {
+				slave_sock = master_sock.accept();
+			} catch (SocketTimeoutException e) {
+				slave_sock = null;
+			}
+
+			if (slave_sock != null) {
 				//create a new slave host and store the remote serversocket address
 				//the remote server's socketaddress is communicated through an object stream
-				ObjectInputStream slave_ostream = ObjectInputStream(slave_sock.getInputStream());
-				SocketAddress server_sockaddr   = (SocketAddress)slave_ostream.readobject();
-				SlaveHost slave_host = new SlaveHost(server_sockaddr);
-				System.out.println("Connected to " + slave_sock.toString());
-				
+				InetAddress slave_iaddr         = slave_sock.getInetAddress();
+				SlaveMessage slave_msg;
+
+				if (slave_iaddr != null && iaddrMap.containsKey(slave_iaddr)) {
+					slave_msg = readMessageFromSlave(slave_sock);
+					master_do(slave_iaddr, slave_msg);
+				}
+
 				//add it to our current list of slaves
-				slave_list.add(slave_host);
-				//now we'll act assuming that the slave's serversocket 
-				//is waiting on the master's command
+				//addNewSlave(slave_host, slave_iaddr);
+
 			}
-			
+
+			////////////////////////////////////////////////////
+
+
+			/******************************************
+			 * THIS BLOCK LISTENS FOR USER INPUT      *
+			 ******************************************
+			 */
+
 			try {
 				input = reader.readLine();
 				args = input.split(" ");
@@ -217,10 +538,17 @@ public class ProcessManager {
 				//TODO quit
 				break;
 			}
-			
-			//This try/catch block find the specified class and instantiate it.
-			//If there are any failures, it lets the user know and goes back into
-			//the input loop.
+
+			///////////////////////////////////////////////////////
+
+
+			/***********************************************************************
+			 * This try/catch block find the specified class and instantiates it.  *
+			 * If there are any failures, it lets the user know and goes back into *
+			 * the input loop.                                                     *
+			 ***********************************************************************
+			 */
+
 			MigratableProcess newProcess;
 			try {
 				Class<MigratableProcess> processClass = (Class<MigratableProcess>)(Class.forName(args[0]));
@@ -254,16 +582,20 @@ public class ProcessManager {
 			}
 
 			//select a slave to send the process to
-			int slaveId = currentProcessId % slave_list.size();
-			sendProcessToSlave(slaveId, currentProcessId);
+			if (currentProcessId >= 0) {
+				int slaveId = currentProcessId % slave_list.size();
+				sendProcessToSlave(slaveId, currentProcessId);
+			}
 			
-			currentProcessId++;
+			currentProcessId = newProcessId();
+
 		}
 	}
 
 	public static void main(String[] argv) throws IOException {
 		ProcessManager pm;
 		//process argv
+		System.out.println("starting");
 		if (argv.length == 2) {
 			if (argv[0] != "-c") {
 				System.err.println("ERROR: Bad input");
