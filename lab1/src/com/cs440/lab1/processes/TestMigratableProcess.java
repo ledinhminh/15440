@@ -33,11 +33,13 @@ public class TestMigratableProcess implements MigratableProcess {
 	
 	private volatile boolean suspending;
 	
-	public TestMigratableProcess(String[] _args) {
+	public TestMigratableProcess(String[] _args) throws Exception {
 		this.args = _args;
 		
-		if (args.length < 3)
-			System.out.println("bad arguments dawg");
+		if (args.length != 2) {
+			System.out.println("usage: TestMigratableProcess <infile> <outfile>");
+			throw new Exception("Invalid arguments");
+		}
 		inFile = args[0];
 		outFile = args[1];	
 		
@@ -76,70 +78,13 @@ public class TestMigratableProcess implements MigratableProcess {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
+		
+		suspending = false;
 	}
 
 	@Override
 	public void suspend() {
 		suspending = true;
+		while(suspending);
 	}
-	
-	public static void main(String[] argv) {
-//		String[] args = {"/Users/nickzukoski/test/in.txt", "/Users/nickzukoski/test/out.txt", "ish"};
-//		MigratableProcess p = new TestMigratableProcess(args);
-//		Thread t = new Thread(p);
-//		t.start();
-//		System.out.println("thread running");
-//		try {
-//			Thread.sleep(5000);
-//		} catch (InterruptedException e) {
-//		}
-//		
-//		System.out.println("thread suspending");
-//		p.suspend();
-//		System.out.println("thread suspended");
-//		FileOutputStream fs;
-//		ObjectOutputStream os;
-//		try {
-//			fs = new FileOutputStream("/Users/nickzukoski/test/process.test");
-//			os = new ObjectOutputStream(fs);
-//			
-//			os.writeObject(p);
-//			
-//			fs.close();
-//			os.close();
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-	
-		
-		FileInputStream fs;
-		ObjectInputStream os;
-		MigratableProcess p;
-		try {
-			fs = new FileInputStream("/Users/nickzukoski/test/process.test");
-			os = new ObjectInputStream(fs);
-			p = (MigratableProcess) os.readObject();
-			Thread t = new Thread(p);
-			t.start();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-		
-		
-	}
-
 }
