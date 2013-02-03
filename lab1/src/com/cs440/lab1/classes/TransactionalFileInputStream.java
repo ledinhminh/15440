@@ -1,4 +1,4 @@
-//package my440package;
+package com.cs440.lab1.classes;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,7 +13,7 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 	String fileName;
 	long position;
 	
-	TransactionalFileInputStream(String _fileName) {
+	public TransactionalFileInputStream(String _fileName) {
 		this.fileName = _fileName;
 		this.position = 0;
 	}

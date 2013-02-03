@@ -1,4 +1,4 @@
-//package my440package;
+package com.cs440.lab1.classes;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,7 +13,6 @@ public class TransactionalFileOutputStream extends OutputStream implements Seria
 	private static final long serialVersionUID = 237544828305277844L;
 	String fileName;
 	long position;
-	
 	
 	private RandomAccessFile openFile() throws IOException {
 		RandomAccessFile file = new RandomAccessFile(fileName, "rws");
