@@ -1,5 +1,4 @@
-
-//package com.cs440.lab1.classes;
+package com.cs440.lab1.classes;
 
 //TODO send slaves messages for load balancing
 
@@ -24,6 +23,8 @@ class MigratableProcess {
 	public String toString() {return null;}
 }	
 */
+
+import com.cs440.lab1.interfaces.MigratableProcess;
 
 //import com.cs440.lab1.interfaces.MigratableProcess;
 
@@ -112,10 +113,11 @@ public class ProcessManager {
 	public ProcessManager(boolean _isMaster, String masterUrl) {	
 		this.master     = _isMaster;
 		MASTER_HOSTNAME = masterUrl;
-        iaddrMap        = new HashMap();
-        pidMap          = new HashMap();
-        processMap      = new HashMap();
-        slave_list      = new LinkedList();
+        iaddrMap        = new HashMap<InetAddress, SlaveHost>();
+        pidMap          = new HashMap<Integer, MigratableProcess>();
+        processMap      = new HashMap<Integer, SlaveHost>();
+        slave_list      = new LinkedList<SlaveHost>();
+        threadToPid		= new HashMap<Thread, Integer>();
 		//server = new ProcessServer(port, this);
 	}
 	
@@ -616,11 +618,23 @@ public class ProcessManager {
 			Socket sock = new Socket(argv[1], MASTER_PORT);
 		    SlaveMessage msg = new SlaveMessage(-1, 'B', true);
             OutputStream os  = sock.getOutputStream();
+            ObjectInputStream oIs = new ObjectInputStream(sock.getInputStream());
             ObjectOutputStream oOs = new ObjectOutputStream(os);
             oOs.writeObject(msg);
+            oOs.flush();
+            
+            try {
+				String res = (String)oIs.readObject();
+				System.out.println("RESULT::::" + res);
+			} catch (ClassNotFoundException e) {
+				System.out.println("shitfuckers");
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            
             oOs.close();
             os.close();
-			//sock.close();
+			sock.close();
 			System.out.println("creating the new processmanager....");
 			pm = new ProcessManager(false, argv[1]);
 			pm.startSlave();

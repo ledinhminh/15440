@@ -1,4 +1,4 @@
-//package com.cs440.lab1.classes;
+package com.cs440.lab1.classes;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,15 +33,26 @@ public class ServeThread extends Thread {
 	public void run() {
 		SlaveMessage m;
 		try {
-            		sock.close();
-            		System.out.println("here");
+            System.out.println("here");
 			Object o = input.readObject();
-            		System.out.println("readobj");
-			if (o.getClass() != SlaveMessage.class) {
+            System.out.println("readobj");
+			if (!(o instanceof SlaveMessage)) {
 				//well fuck, they didn't send the right object. Fuck um we'll ignore it
 				return;
 			}
 			m = (SlaveMessage) o;
+			
+			output.writeObject("OK");
+			output.flush();
+			
+			if (output != null)
+				output.close();
+			if (input != null)
+				input.close();
+			if (sock != null)
+				sock.close();
+			
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
             		System.out.println("kevin bravo");
@@ -52,6 +63,9 @@ public class ServeThread extends Thread {
 			e.printStackTrace();
 			return;
 		}
+		
+		
+		
 
         if (m.firstTime() == true) {
             pm.addNewSlave(address);
