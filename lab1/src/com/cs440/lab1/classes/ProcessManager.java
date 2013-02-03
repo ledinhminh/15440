@@ -1,5 +1,5 @@
 
-package com.cs440.lab1.classes;
+//package com.cs440.lab1.classes;
 
 //TODO send slaves messages for load balancing
 
@@ -25,7 +25,7 @@ class MigratableProcess {
 }	
 */
 
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 /** SlaveHost contains methods for load balancing, most importantly
  *  a list of processes that its host currently holds
@@ -37,7 +37,7 @@ import com.cs440.lab1.interfaces.MigratableProcess;
 class SlaveHost {
 	private InetAddress iaddr;
 	private int process_count;
-	private List<Integer> process_list;
+	private LinkedList<Integer> process_list;
 
 	SlaveHost(InetAddress _iaddr) {
 		iaddr         = _iaddr;
@@ -65,15 +65,22 @@ class SlaveHost {
 			System.err.println("pushProcess " + _pid + " failed");
 		}
 	}
+	public LinkedList<Integer> getProcessList() {
+		return process_list;
+	}
 }
 
 public class ProcessManager {
 	//The port for all the servers to run on
-	private static final int MASTER_PORT   = 15440;
-	private static final int SLAVE_PORT    = 15480;
-	private static final String OBJECT_DIR = "/afs/ blah blah kbravo / 440";
-	private static final int SOCK_TIMEOUT  = 100;
-	private int currentProcessId           = 0;
+	private static final int MASTER_PORT      = 15440;
+	private static final int MASTER_SEND_PORT = 15441;
+	private static final int SLAVE_PORT       = 15442;
+	private static final int SLAVE_INIT_PORT  = 15443;
+	private static final String OBJECT_DIR    = "/afs/ blah blah kbravo / 440";
+	private static final int SOCK_TIMEOUT     = 100;
+	private static final int BALANCE_TIME_MS  = 5000;
+	private static final int THREAD_JOINTIME  = 10;
+	private int currentProcessId              = 0;
 	private String MASTER_HOSTNAME;
 
 	private ProcessServer serverThread;
@@ -88,6 +95,8 @@ public class ProcessManager {
 	private HashMap<Integer, SlaveHost> processMap;
 	private HashMap<InetAddress, SlaveHost> iaddrMap;
 	private HashMap<Integer, MigratableProcess> pidMap;
+	private HashMap<Thread, Integer> threadToPid;
+	private LinkedList<Thread> threadList;
 
 	//list of processes that need to be redistributed
 	private LinkedList<Integer> suspendedProcesses;
@@ -134,6 +143,22 @@ public class ProcessManager {
 	 * Print to std out the running processes and their arguments
 	 */
 	public void printProcesses() {
+		SlaveHost slave;
+		LinkedList<Integer> processList;
+		String addr;
+		int i;
+		System.out.println("fuck shit damn");
+		for (i = 0; i < slave_list.size(); i++) {
+			slave       = slave_list.get(i);
+			addr        = slave.getInetAddress().toString();
+			processList = slave.getProcessList();
+			System.out.println("Hostname ------- " + addr);
+			for (i = 0; i < processList.size(); i++) {
+				MigratableProcess p = pidMap.get(i);
+				System.out.println(p.toString());
+			}
+			System.out.println("-----------------");
+		}
 		return;
 	}
 	
@@ -144,8 +169,26 @@ public class ProcessManager {
 	 * @param slaveId The id of the slave to send to
 	 * @param processId The id of the process to send
 	 */
-	private void sendProcessToSlave(int slaveId, int processId) {
-			
+	public void sendProcessToSlave(int slaveId, int processId) {
+		SlaveMessage msg  = new SlaveMessage(processId, 'R');
+		InetAddress iaddr = null;
+		Socket sock       = null;
+		try {
+			SlaveHost slave = slave_list.get(slaveId);
+			iaddr           = slave.getInetAddress();
+		} catch (IndexOutOfBoundsException e) {
+			System.err.println("SlaveId out of range!");
+			return;
+		}
+
+		try {
+			sock                  = new Socket(iaddr, SLAVE_PORT);
+		} catch (Exception e) {
+			System.err.println("sendProcessToSlave: error creating socket");
+			return;
+		}
+
+		sendMessageToSlave(msg, sock);
 		return;
 	}
 
@@ -355,9 +398,7 @@ public class ProcessManager {
 		} catch (Exception e) {
 			System.err.println("Error in sendMessageToSlave() write/close");
 		}
-	}
-		
-		
+	}	
 		
 
 
@@ -388,7 +429,12 @@ public class ProcessManager {
 		else if (action == 'R') {
 			//start the new process, send back start msg
 			MigratableProcess process = readProcess(processId);
-			if (process != null) process.run();
+			if (process != null) {
+				Thread t = new Thread(process);
+				t.run();
+				threadToPid.put(t, processId);
+				threadList.add(t);
+			}
 			//we can just send the same message back
 			pidMap.put(processId, process);
 			sendMessageToMaster(master_msg);
@@ -402,6 +448,32 @@ public class ProcessManager {
 	}
 
 
+	private void loadBalance() {
+		int i;
+		int slave_idx;
+		Random random = new Random();
+		SlaveHost host;
+		int pid;
+		for (i = 0; i < slave_list.size(); i++) {
+			host      = slave_list.get(i);
+			if ((pid = host.popProcess()) >= 0) {
+				slave_idx = random.nextInt(slave_list.size());
+				sendProcessToSlave(slave_idx, pid);
+			}
+		}
+	}
+			
+
+
+	private void killProcess(int processId) {
+		pidMap.remove(new Integer(processId));
+		SlaveMessage msg = new SlaveMessage(processId, 'T');
+		sendMessageToMaster(msg);
+		pidMap.remove(new Integer(processId));
+		processMap.remove(new Integer(processId));
+	}
+	
+
 	/**
 	 * Starts a new slave host by opening up a socket and listening
 	 * to stuff...sends a server socketaddress to the master so it
@@ -410,14 +482,33 @@ public class ProcessManager {
 	private void startSlave() {
 		serverThread = new ProcessServer(SLAVE_PORT, this);
 		serverThread.run();
-	}
+		int i;
+		Thread thread;
+		int threadCount = threadList.size();
+		while(true) {
+			while ((thread = threadList.peek()) != null) {
+				try {
+					thread.join(THREAD_JOINTIME);
+				} catch (InterruptedException e) {
+					//remove it from the thread list
+					killProcess(threadToPid.get(thread).intValue());
+					try {
+						threadList.remove(thread);
+						threadToPid.remove(thread);
+					} catch (Exception e2) {}
+				}
+				
+			}
+		}
 
+	}
 
 	/** 
 	 * Starts a new master host by opening up a master socket
 	 * and monitoring stdin for new commands
 	 */
 	private void startMaster() {
+		long refTime = System.currentTimeMillis();
 		//setup the input stream reader
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		
@@ -430,10 +521,6 @@ public class ProcessManager {
 			String input;
 			String[] args;
 
-			/******************************************
-			 * THIS BLOCK LISTENS FOR USER INPUT      *
-			 ******************************************
-			 */
 
 			try {
 				input = reader.readLine();
@@ -451,6 +538,7 @@ public class ProcessManager {
 			}
 			else if (args[0].equals("quit")) {
 				//TODO quit
+				System.exit(1);
 				break;
 			}
 
@@ -496,15 +584,21 @@ public class ProcessManager {
 				continue;
 			}
 
+			writeProcess(newProcess, currentProcessId);
+
 			//select a slave to send the process to
 			if (currentProcessId >= 0) {
 				int slaveId = currentProcessId % slave_list.size();
-				pidMap.put(slaveId, newProcess);
+				pidMap.put(currentProcessId, newProcess);
 				sendProcessToSlave(slaveId, currentProcessId);
 			}
 			
 			currentProcessId = newProcessId();
 
+			if (System.currentTimeMillis() - refTime == BALANCE_TIME_MS) {
+				loadBalance();
+				refTime = System.currentTimeMillis();
+			}
 		}
 	}
 
@@ -513,16 +607,17 @@ public class ProcessManager {
 		//process argv
 		System.out.println("starting");
 		if (argv.length == 2) {
-            System.out.println(argv[0]);
+			System.out.println(argv[0]);
 			if (!argv[0].equals("-c")) {
 				System.err.println("ERROR: Bad input");
 				return;
 			}
 			//setup as slave
-            Socket sock = new Socket("ghc29.ghc.andrew.cmu.edu", MASTER_PORT, InetAddress.getLocalHost(), SLAVE_PORT);
-            System.out.println("fuck");
-            sock.close();
-            System.out.println("creating the new processmanager....");
+			Socket sock = new Socket(argv[1], MASTER_PORT);
+			
+			System.out.println(InetAddress.getLocalHost().toString());
+			sock.close();
+			System.out.println("creating the new processmanager....");
 			pm = new ProcessManager(false, argv[1]);
 			pm.startSlave();
 		}
