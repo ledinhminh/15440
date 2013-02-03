@@ -1,5 +1,5 @@
-package com.cs440.lab1.classes;
 
+package com.cs440.lab1.classes;
 
 //TODO send slaves messages for load balancing
 
@@ -70,7 +70,7 @@ class SlaveHost {
 public class ProcessManager {
 	//The port for all the servers to run on
 	private static final int MASTER_PORT   = 15440;
-	private static final int SLAVE_PORT    = 15440;
+	private static final int SLAVE_PORT    = 15480;
 	private static final String OBJECT_DIR = "/afs/ blah blah kbravo / 440";
 	private static final int SOCK_TIMEOUT  = 100;
 	private int currentProcessId           = 0;
@@ -85,12 +85,12 @@ public class ProcessManager {
 
 	//mapping from processID to slave it is on.
 	//TODO change the name of processMap...bad style
-	private Map<Integer, SlaveHost> processMap;
-	private Map<InetAddress, SlaveHost> iaddrMap;
-	private Map<Integer, MigratableProcess> pidMap;
+	private HashMap<Integer, SlaveHost> processMap;
+	private HashMap<InetAddress, SlaveHost> iaddrMap;
+	private HashMap<Integer, MigratableProcess> pidMap;
 
 	//list of processes that need to be redistributed
-	private List<Integer> suspendedProcesses;
+	private LinkedList<Integer> suspendedProcesses;
 
 	private boolean master;
 
@@ -103,9 +103,14 @@ public class ProcessManager {
 	public ProcessManager(boolean _isMaster, String masterUrl) {	
 		this.master     = _isMaster;
 		MASTER_HOSTNAME = masterUrl;
+        iaddrMap        = new HashMap();
+        pidMap          = new HashMap();
+        processMap      = new HashMap();
+        slave_list      = new LinkedList();
 		//server = new ProcessServer(port, this);
 	}
 	
+
 
 	/**
 	 * newProcessId()
@@ -210,9 +215,15 @@ public class ProcessManager {
 	 * @param iaddr      - the InetAddress to map slave_host to
 	 * adds a new slave to the master's pool of slaves
 	 */
-	private void addNewSlave(SlaveHost slave_host, InetAddress iaddr) {
-		slave_list.add(slave_host);
-		iaddrMap.put(iaddr, slave_host);
+	private void addNewSlave(InetAddress iaddr) {
+        SlaveHost slave_host = new SlaveHost(iaddr);
+		try {
+            slave_list.add(slave_host);
+            System.err.println("LOL");
+		    iaddrMap.put(iaddr, slave_host);
+        } catch (Exception e) {
+            System.err.println("addNewSlave: Exception!");
+        }
 	}
 
 
@@ -391,7 +402,6 @@ public class ProcessManager {
 	}
 
 
-
 	/**
 	 * Starts a new slave host by opening up a socket and listening
 	 * to stuff...sends a server socketaddress to the master so it
@@ -399,15 +409,15 @@ public class ProcessManager {
 	 */
 	private void startSlave() {
 		serverThread = new ProcessServer(SLAVE_PORT, this);
-		
 		serverThread.run();
 	}
-	
+
+
 	/** 
 	 * Starts a new master host by opening up a master socket
 	 * and monitoring stdin for new commands
 	 */
-	private void startMaster() throws IOException {
+	private void startMaster() {
 		//setup the input stream reader
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		
@@ -503,11 +513,16 @@ public class ProcessManager {
 		//process argv
 		System.out.println("starting");
 		if (argv.length == 2) {
-			if (argv[0] != "-c") {
+            System.out.println(argv[0]);
+			if (!argv[0].equals("-c")) {
 				System.err.println("ERROR: Bad input");
 				return;
 			}
 			//setup as slave
+            Socket sock = new Socket("ghc29.ghc.andrew.cmu.edu", MASTER_PORT, InetAddress.getLocalHost(), SLAVE_PORT);
+            System.out.println("fuck");
+            sock.close();
+            System.out.println("creating the new processmanager....");
 			pm = new ProcessManager(false, argv[1]);
 			pm.startSlave();
 		}
