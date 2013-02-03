@@ -203,7 +203,7 @@ public class ProcessManager {
 		String fileName = "processes/process_" + _id;
 		MigratableProcess p;
 		TransactionalFileInputStream fileStream = new TransactionalFileInputStream(fileName);
-
+        System.out.println("readProcess");
 		try {
 			ObjectInputStream objectStream = new ObjectInputStream(fileStream);
 			p = (MigratableProcess) objectStream.readObject();
@@ -236,7 +236,7 @@ public class ProcessManager {
 	private void writeProcess(MigratableProcess p, int _id) {
 		//suspend the process so it can be serialized
 		p.suspend();
-		
+	    System.out.println("writeProcess");	
 		TransactionalFileOutputStream fileStream = new TransactionalFileOutputStream("processes/process_"+_id+".ser");
 		ObjectOutputStream objectStream;
 		
@@ -258,7 +258,7 @@ public class ProcessManager {
 	 * @param iaddr      - the InetAddress to map slave_host to
 	 * adds a new slave to the master's pool of slaves
 	 */
-	private void addNewSlave(InetAddress iaddr) {
+	public void addNewSlave(InetAddress iaddr) {
         SlaveHost slave_host = new SlaveHost(iaddr);
 		try {
             slave_list.add(slave_host);
@@ -521,15 +521,15 @@ public class ProcessManager {
 			String input;
 			String[] args;
 
-
+            System.out.println("master things");
 			try {
 				input = reader.readLine();
 				args = input.split(" ");
 				if (args.length == 0)
 					continue;
 			} catch (IOException e1) {
-				e1.printStackTrace();
-				return;
+				System.err.println("IOException while reading stdin");
+                return;
 			}
 			
 			if (args[0].equals("ps")) {
@@ -541,7 +541,7 @@ public class ProcessManager {
 				System.exit(1);
 				break;
 			}
-
+            System.out.println("hi");
 			///////////////////////////////////////////////////////
 
 
@@ -614,9 +614,13 @@ public class ProcessManager {
 			}
 			//setup as slave
 			Socket sock = new Socket(argv[1], MASTER_PORT);
-			
-			System.out.println(InetAddress.getLocalHost().toString());
-			sock.close();
+		    SlaveMessage msg = new SlaveMessage(-1, 'B', true);
+            OutputStream os  = sock.getOutputStream();
+            ObjectOutputStream oOs = new ObjectOutputStream(os);
+            oOs.writeObject(msg);
+            oOs.close();
+            os.close();
+			//sock.close();
 			System.out.println("creating the new processmanager....");
 			pm = new ProcessManager(false, argv[1]);
 			pm.startSlave();
