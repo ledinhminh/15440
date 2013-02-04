@@ -33,7 +33,7 @@ public class ProcessManager {
 	private String MASTER_HOSTNAME;
     
     //list of terminated processes names
-    private List<String> terminatedProcesses;
+    private List<String[]> terminatedProcesses;
 
 
 	private ProcessServer serverThread;
@@ -73,7 +73,7 @@ public class ProcessManager {
         threadToPid		= new HashMap<Thread, Integer>();
         threadList      = new LinkedList<Thread>();
         suspendedProcesses = new LinkedList<Integer>();
-		terminatedProcesses  = new LinkedList<String>();
+		terminatedProcesses  = new LinkedList<String[]>();
         //server = new ProcessServer(port, this);
 	}
 	
@@ -128,7 +128,10 @@ public class ProcessManager {
 		}
 
         for (i = 0; i < terminatedProcesses.size(); i++) {
-            System.out.println("Process \"" + terminatedProcesses.get(i) + "\" was terminated");
+            String[] s = terminatedProcesses.get(i);
+            if (s.length != 2) continue;
+            System.out.println("Process " + s[0] + " \"" + s[1] 
+                                            + "\" was terminated");
         }
 		return;
 	}
@@ -159,12 +162,16 @@ public class ProcessManager {
             System.err.println("Do you have any slaves running?");
 			return;
 		}
-
-		sendMessageToSlave(msg, sock);
-        if (command == 'R') {
+        //send the message
+        if (sendMessageToSlave(msg, sock) != -1 && command == 'R') {
             pidToSlaveHost.put(new Integer(processId), slaveList.get(slaveId));
             slaveList.get(new Integer(slaveId)).pushProcess(processId);
-        } 
+        }
+        try {
+            sock.close();
+        } catch (Exception e) {
+            System.err.println("sendProcessCommandToSlave: socket close error!");
+        }
 		return;
 	}
 
@@ -211,7 +218,8 @@ public class ProcessManager {
 	private void writeProcess(MigratableProcess p, int _id) {
 		//suspend the process so it can be serialized
 		p.suspend();
-		TransactionalFileOutputStream fileStream = new TransactionalFileOutputStream("processes/process_"+_id+".ser");
+		TransactionalFileOutputStream fileStream = new TransactionalFileOutputStream(
+                                                        "processes/process_"+_id+".ser");
 		ObjectOutputStream objectStream;
 		
 		try {
@@ -242,6 +250,13 @@ public class ProcessManager {
 	}
 
 
+
+    /**
+     * master_do()
+     * @param iaddr - the inet address of the slave who send the message
+     * @param msg   - the message object send by the slave
+     * takes a message from a slave and does the required master things
+     */
 	public void master_do(InetAddress iaddr, SlaveMessage msg) {
 		int processId = msg.getProcessId();
 		char action   = msg.getAction();
@@ -258,10 +273,9 @@ public class ProcessManager {
 				//remove from the pidToSlaveHost and pidToProcess, pop it from
 				//the SlaveHost
 				if (iaddr != null) {
-                    if (pidToProcess.get(new Integer(processId)).toString() == null) {
-                        System.err.println("ERROR geting process from Pid");
-                    }
-                    terminatedProcesses.add(pidToProcess.get(new Integer(processId)).toString());
+                    String[] term = {"" + processId, 
+                                   pidToProcess.get(new Integer(processId)).toString()};
+                    terminatedProcesses.add(term);
 					pidToSlaveHost.remove(new Integer(processId));
 					pidToProcess.remove(new Integer(processId));
                     iaddrToSlaveHost.get(iaddr).getProcessList().remove(new Integer(processId));
@@ -324,24 +338,26 @@ public class ProcessManager {
 	/**
 	 * sendMessageToMaster()
 	 * @param msg - the message to send
+     * returns -1 on error
 	 */
-	private void sendMessageToMaster(SlaveMessage msg) {
+	private int sendMessageToMaster(SlaveMessage msg) {
 		Socket sock;
         try {
             sock = new Socket(MASTER_HOSTNAME, MASTER_PORT);
         } catch (Exception e) {
             System.err.println("sendMessageToMaster: sock creation error");
-            return;
+            return -1;
         }
-	    sendMessageToSlave(msg, sock);
+	    return sendMessageToSlave(msg, sock);
     }
 
 	/**
 	 * sendMessageToSlave()
 	 * @param msg  - the message to send
 	 * @param sock - the Socket over which to send it
+     * returns -1 on error
 	 */
-	private void sendMessageToSlave(SlaveMessage msg, Socket sock) {
+	private int sendMessageToSlave(SlaveMessage msg, Socket sock) {
 		OutputStream os;
 		ObjectOutputStream msg_os;
         InputStream is; ObjectInputStream msg_is;
@@ -353,7 +369,7 @@ public class ProcessManager {
 
 		} catch (Exception e) {
 			System.err.println("sendMessage: setup error");
-			return;
+			return -1;
 		}
 
 		try {
@@ -366,7 +382,9 @@ public class ProcessManager {
 			msg_os.close();
 		} catch (Exception e) {
 			System.err.println("Error in sendMessage write/close");
+            return -1;
 		}
+        return 0;
 	}	
 		
 
@@ -383,7 +401,6 @@ public class ProcessManager {
 		int processId = master_msg.getProcessId();
 		char action   = master_msg.getAction();
 		char response = action;
-
 		if (processId < 0) return -1;
 
 		if (action == 'S') {
@@ -482,13 +499,16 @@ public class ProcessManager {
 
 
 		while(true) {
-            //need to rest sometimes, otherwise this will spin
-            //a tight loop
+            //need to rest sometimes, otherwise this can spin
+            //a tight loop thats inefficient and keeps
+            //other threads from running properly
             try {
                 Thread.sleep(10);
             } catch (Exception e) {}
 
 			for (i = 0; i < threadList.size(); i++) {
+                //run through the list of threads, check
+                //which ones have terminated
 				try {
                     thread = threadList.get(i);
 					thread.join(THREAD_JOINTIME);
@@ -498,7 +518,9 @@ public class ProcessManager {
                     continue;
                 }
                 if (!thread.isAlive()) {
+                    //if the thread's done, kill it on the slave side
 				    killProcess(threadToPid.get(thread).intValue());
+                    //remove it from the slave's record
 				    threadList.remove(thread);
 				    threadToPid.remove(thread);
                 }
@@ -548,7 +570,6 @@ public class ProcessManager {
 				System.exit(1);
 				break;
 			}
-			
             ///////////////////////////////////////////////////////
 
 
@@ -561,8 +582,10 @@ public class ProcessManager {
 
 			MigratableProcess newProcess;
 			try {
-				Class<MigratableProcess> processClass = (Class<MigratableProcess>)(Class.forName(args[0]));
-				Constructor<MigratableProcess> processConstructor = processClass.getConstructor(String[].class);
+				Class<MigratableProcess> processClass = (Class<MigratableProcess>)(
+                                                                Class.forName(args[0]));
+				Constructor<MigratableProcess> processConstructor = processClass.getConstructor(
+                                                                                String[].class);
                 Object[] obj = new Object[1];
                 obj[0] = (Object[])args;
 				newProcess = processConstructor.newInstance(obj);
@@ -591,14 +614,13 @@ public class ProcessManager {
 				continue;
 			}
 			writeProcess(newProcess, currentProcessId);
-
 			//select a slave to send the process to
 			if (currentProcessId >= 0) {
 				int slaveId = currentProcessId % slaveList.size();
 				pidToProcess.put(currentProcessId, newProcess);
 				sendProcessCommandToSlave(slaveId, currentProcessId, 'R');
 			}
-			
+			//get the lowest available processId to use next
 			currentProcessId = newProcessId();
 		}
 	}
