@@ -52,6 +52,14 @@ public class MeterCheckProcess implements MigratableProcess {
 		
 	}
 	
+	public String toString() {
+		String retStr = "";
+		for (int i = 0; i < args.length; i++) {
+			retStr += args[i] + " ";
+		}
+		return retStr;
+	}
+	
 	/**
 	 * createDictMap()
 	 * Reads in the raw dictionary file and creates a map from
