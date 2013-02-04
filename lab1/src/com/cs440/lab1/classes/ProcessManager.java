@@ -17,65 +17,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.io.InputStream;
 import java.io.OutputStream;
-/*
-class MigratableProcess {
-	void suspend() {}
-	public String toString() {return null;}
-}	
-*/
-
 //import com.cs440.lab1.interfaces.MigratableProcess;
 
 //import com.cs440.lab1.interfaces.MigratableProcess;
 
-/** SlaveHost contains methods for load balancing, most importantly
- *  a list of processes that its host currently holds
- *  the process list is FIFO, so processes that have been on this machine
- *  the longest will be packaged and mailed somewhere
- *  @param _iaddr  The Inet Address which the master will use to communicate
- *	          with the slave
-*/
-class SlaveHost {
-    private InetAddress iaddr;
-    private int processCount;
-    private LinkedList<Integer> processList;
-
-    SlaveHost(InetAddress _iaddr) {
-        iaddr         = _iaddr;
-        processCount = 0;
-        processList  = new LinkedList<Integer>();
-    }
-
-    public InetAddress getInetAddress() {
-        return iaddr;
-    }
-
-    public Integer popProcess() {
-        try {
-            if (processList.size() == 0) {
-                System.err.println("popProcess: No Processes Remain.  Can't pop");
-    			return new Integer(-1);
-    		}
-        } catch (Exception e) {
-            return new Integer(-1);
-		}
-		return processList.remove(0);
-	}
-	public void pushProcess(int _pid) {
-		try {
-			processList.add(_pid);
-		} catch (Exception e) {
-			System.err.println("pushProcess " + _pid + " failed");
-		}
-	}
-	public LinkedList<Integer> getProcessList() {
-		return processList;
-	}
-    
-    public int getLoad() {
-        return processList.size();
-    }
-}
 
 public class ProcessManager {
 	//The port for all the servers to run on
@@ -314,7 +259,7 @@ public class ProcessManager {
 				//the SlaveHost
 				if (iaddr != null) {
                     if (pidToProcess.get(new Integer(processId)).toString() == null) {
-                        System.err.println("wtf?");
+                        System.err.println("ERROR geting process from Pid");
                     }
                     terminatedProcesses.add(pidToProcess.get(new Integer(processId)).toString());
 					pidToSlaveHost.remove(new Integer(processId));

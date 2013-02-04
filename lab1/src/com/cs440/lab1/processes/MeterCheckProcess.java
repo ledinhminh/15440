@@ -1,4 +1,4 @@
-package com.cs440.lab1.processes;
+//package com.cs440.lab1.processes;
 
 import java.io.DataInputStream;
 import java.io.FileInputStream;
@@ -11,9 +11,9 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.cs440.lab1.classes.TransactionalFileInputStream;
-import com.cs440.lab1.classes.TransactionalFileOutputStream;
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.classes.TransactionalFileInputStream;
+//import com.cs440.lab1.classes.TransactionalFileOutputStream;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 public class MeterCheckProcess implements MigratableProcess {
 	/**
