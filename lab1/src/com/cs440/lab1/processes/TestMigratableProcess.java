@@ -1,4 +1,4 @@
-package com.cs440.lab1.processes;
+//package com.cs440.lab1.processes;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,9 +13,9 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 
-import com.cs440.lab1.classes.TransactionalFileInputStream;
-import com.cs440.lab1.classes.TransactionalFileOutputStream;
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.classes.TransactionalFileInputStream;
+//import com.cs440.lab1.classes.TransactionalFileOutputStream;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 public class TestMigratableProcess implements MigratableProcess {
 
@@ -32,28 +32,32 @@ public class TestMigratableProcess implements MigratableProcess {
 	private TransactionalFileOutputStream outStream;
 	
 	private volatile boolean suspending;
-	
+    private boolean isRunning;
+    private boolean isFinished;
 	public TestMigratableProcess(String[] _args) throws Exception {
 		this.args = _args;
 		
-		if (args.length != 2) {
+		if (args.length != 3) {
 			System.out.println("usage: TestMigratableProcess <infile> <outfile>");
 			throw new Exception("Invalid arguments");
 		}
-		inFile = args[0];
-		outFile = args[1];	
+		inFile = args[1];
+		outFile = args[2];	
 		
 		inStream = new TransactionalFileInputStream(inFile);
 		outStream = new TransactionalFileOutputStream(outFile);
 		suspending = false;
+        isRunning = false;
+        isFinished = false;
 	}
 	
 	public String toString() {
-		return "TestMigratableProcess " + args;
+		return "TestMigratableProcess " + args[1] + " " + args[2];
 	}
 	
 	@Override
 	public void run() {
+        isRunning = true;
 		suspending = false;
 		DataInputStream in = new DataInputStream(inStream);
 		PrintStream out = new PrintStream(outStream);
@@ -64,12 +68,13 @@ public class TestMigratableProcess implements MigratableProcess {
 				line = in.readLine();
 				if (line == null) {
 					System.out.println("line is null");
-					break;
+					isFinished = true;
+                    break;
 				}
 				out.println(line);
 				System.out.println("LINE::" + line);
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					//ignore
 				}
@@ -80,11 +85,13 @@ public class TestMigratableProcess implements MigratableProcess {
 		}
 		
 		suspending = false;
+        System.out.println("bounce!");
 	}
 
 	@Override
 	public void suspend() {
 		suspending = true;
-		while(suspending);
+		while(suspending && isRunning && !isFinished);
+        System.out.println("susBounce!");
 	}
 }

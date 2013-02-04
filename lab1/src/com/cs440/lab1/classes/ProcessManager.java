@@ -88,6 +88,8 @@ public class ProcessManager {
 	private static final int THREAD_JOINTIME  = 10;
 	private int currentProcessId              = 0;
 	private String MASTER_HOSTNAME;
+    private List<String> terminatedList;
+
 
 	private ProcessServer serverThread;
 	private ServerSocket slaveServerSocket;
@@ -125,7 +127,8 @@ public class ProcessManager {
         threadToPid		= new HashMap<Thread, Integer>();
         threadList      = new LinkedList<Thread>();
         suspendedProcesses = new LinkedList<Integer>();
-		//server = new ProcessServer(port, this);
+		terminatedList  = new LinkedList<String>();
+        //server = new ProcessServer(port, this);
 	}
 	
 
@@ -165,24 +168,28 @@ public class ProcessManager {
 		SlaveHost slave;
 		LinkedList<Integer> processList;
 		String addr;
-		int i;
+		int i; int j;
 		System.out.println("fuck shit damn");
 		for (i = 0; i < slave_list.size(); i++) {
 			slave       = slave_list.get(i);
 			addr        = slave.getInetAddress().toString();
 			processList = slave.getProcessList();
 			System.out.println("Hostname ------- " + addr);
-			for (i = 0; i < processList.size(); i++) {
-				MigratableProcess p = pidMap.get(i);
-				System.out.println(p.toString());
+			for (j = 0; j < processList.size(); j++) {
+				MigratableProcess p = pidMap.get(processList.get(j));
+                if (p != null) System.out.println(p.toString());
 			}
 			System.out.println("-----------------");
 		}
+
+        for (i = 0; i < terminatedList.size(); i++) {
+            System.out.println("Process \"" + terminatedList.get(i) + "\" was terminated");
+        }
 		return;
 	}
 	
 	/**
-	 * sendProcessToSlave: opens a connection to the slave with id slaveId
+	 * sendProcessCommandToSlave: opens a connection to the slave with id slaveId
 	 * and sends it a message to start running process processId
 	 * 
 	 * @param slaveId The id of the slave to send to
@@ -208,6 +215,10 @@ public class ProcessManager {
 		}
 
 		sendMessageToSlave(msg, sock);
+        if (command == 'R') {
+            processMap.put(new Integer(processId), slave_list.get(slaveId));
+            slave_list.get(new Integer(slaveId)).pushProcess(processId);
+        } 
 		return;
 	}
 
@@ -305,8 +316,11 @@ public class ProcessManager {
 				//remove from the processMap and pidMap, pop it from
 				//the SlaveHost
 				if (iaddr != null) {
+                    System.out.println("master term");
+                    terminatedList.add(pidMap.get(new Integer(processId)).toString());
 					processMap.remove(new Integer(processId));
 					pidMap.remove(new Integer(processId));
+                    iaddrMap.get(iaddr).getProcessList().remove(new Integer(processId));
 				}
 			}
 			else if (action == 'R') {
@@ -438,11 +452,14 @@ public class ProcessManager {
 		else if (action == 'R') {
 			//start the new process, send back start msg
 			MigratableProcess process = readProcess(processId);
+            System.out.println("slave_do...adding a process");
 			if (process != null) {
+                System.out.println("nonnull");
 				Thread t = new Thread(process);
 				threadToPid.put(t, processId);
 				threadList.add(t);
                 t.start();
+                System.out.println("started" + threadList.size());
 			}
 			//we can just send the same message back
 			pidMap.put(processId, process);
@@ -483,7 +500,7 @@ public class ProcessManager {
 					slave_idx = random.nextInt(slave_list.size());
 					sendProcessCommandToSlave(i, pid, 'S');
 					sendProcessCommandToSlave(slave_idx, pid, 'R');
-				}
+               }
 			}
 		}
 	}
@@ -496,7 +513,6 @@ public class ProcessManager {
 		pidMap.remove(new Integer(processId));
 		processMap.remove(new Integer(processId));
 	}
-	
 
 	/**
 	 * Starts a new slave host by opening up a socket and listening
@@ -505,24 +521,38 @@ public class ProcessManager {
 	 */
 	private void startSlave() {
 		serverThread = new ProcessServer(SLAVE_PORT, this);
-		serverThread.run();
+		serverThread.start();
 		int i;
 		Thread thread;
 		int threadCount = threadList.size();
+
+
 		while(true) {
+            try {
+                Thread.sleep(10);
+            } catch (Exception e) {}
 			for (i = 0; i < threadList.size(); i++) {
+                System.out.println("start");
+                System.out.flush();
 				try {
+                    Thread.sleep(100);
                     thread = threadList.get(i);
+                    System.out.println("tstatus: " + thread.isAlive());
 					thread.join(THREAD_JOINTIME);
 				} catch (InterruptedException e) {
 					//remove it from the thread list
+                    System.out.println("inter");
                     continue;
                 } catch (Exception e) {
+                    System.out.println("exc");
                     continue;
                 }
-				killProcess(threadToPid.get(thread).intValue());
-				threadList.remove(thread);
-				threadToPid.remove(thread);
+                if (!thread.isAlive()) {
+                    System.out.println("kill mofagas");
+				    killProcess(threadToPid.get(thread).intValue());
+				    threadList.remove(thread);
+				    threadToPid.remove(thread);
+                }
 			}
 		}
 
@@ -587,8 +617,8 @@ public class ProcessManager {
                 Object[] obj = new Object[1];
                 obj[0] = (Object[])args;
 				newProcess = processConstructor.newInstance(obj);
-			
-			} catch (ClassNotFoundException e) {
+		
+            } catch (ClassNotFoundException e) {
 				//Couldn't link find that class. stupid user.
 				System.out.println("Could not find class " + args[0]);
 				continue;
@@ -618,7 +648,7 @@ public class ProcessManager {
 			if (currentProcessId >= 0) {
 				int slaveId = currentProcessId % slave_list.size();
 				pidMap.put(currentProcessId, newProcess);
-				sendProcessToSlave(slaveId, currentProcessId);
+				sendProcessCommandToSlave(slaveId, currentProcessId, 'R');
 			}
 			
 			currentProcessId = newProcessId();
@@ -652,7 +682,6 @@ public class ProcessManager {
 				String res = (String)oIs.readObject();
 				System.out.println("RESULT::::" + res);
 			} catch (ClassNotFoundException e) {
-				System.out.println("shitfuckers");
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
