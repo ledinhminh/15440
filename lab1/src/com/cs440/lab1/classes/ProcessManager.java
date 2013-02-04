@@ -188,8 +188,8 @@ public class ProcessManager {
 	 * @param slaveId The id of the slave to send to
 	 * @param processId The id of the process to send
 	 */
-	public void sendProcessToSlave(int slaveId, int processId) {
-		SlaveMessage msg  = new SlaveMessage(processId, 'R');
+	public void sendProcessCommandToSlave(int slaveId, int processId, char command) {
+		SlaveMessage msg  = new SlaveMessage(processId, command);
 		InetAddress iaddr = null;
 		Socket sock       = null;
 		try {
@@ -428,13 +428,11 @@ public class ProcessManager {
 
 		if (processId < 0) return -1;
 
-
 		if (action == 'S') {
 			//suspend the process, send back sus message
 			MigratableProcess process = pidMap.get(processId);
 			process.suspend();
 			writeProcess(process, processId);
-			sendMessageToMaster(master_msg);
 			return 0;
 		}
 		else if (action == 'R') {
@@ -448,7 +446,6 @@ public class ProcessManager {
 			}
 			//we can just send the same message back
 			pidMap.put(processId, process);
-			sendMessageToMaster(master_msg);
 			return 0;
 		}
 		else {
@@ -458,40 +455,38 @@ public class ProcessManager {
 
 	}
 
-
 	private void loadBalance() {
 		int i;
 		int slave_idx;
 		Random random = new Random();
 		SlaveHost host;
 		int pid;
-        System.out.println("BALANCE");
-        int load_avg = 0;
-        int current_load = 0;
+        	System.out.println("BALANCE");
+        	int load_avg = 0;
+        	int current_load = 0;
 
-        //get an average load from the slavehosts
-        for (i = 0; i < slave_list.size(); i++) {
-            current_load = slave_list.get(i).getLoad();
-            load_avg += current_load;
-        }
+        	//get an average load from the slavehosts
+       		for (i = 0; i < slave_list.size(); i++) {
+            		current_load = slave_list.get(i).getLoad();
+			load_avg += current_load;
+        	}
 
-        load_avg /= slave_list.size();
-        //round
-        load_avg++;
+        	load_avg /= slave_list.size();
+        	//round
+        	load_avg++;
 
 
 		for (i = 0; i < slave_list.size(); i++) {
-			host      = slave_list.get(i);
-            while (host.getLoad() > load_avg) {
-			    if ((pid = host.popProcess()) >= 0) {
-				    slave_idx = random.nextInt(slave_list.size());
-                    sendStopToSlave(slave_idx, pid);
-				    sendProcessToSlave(slave_idx, pid);
-                }
+			host = slave_list.get(i);
+        		while (host.getLoad() > load_avg) {
+				if ((pid = host.popProcess()) >= 0) {
+					slave_idx = random.nextInt(slave_list.size());
+					sendProcessCommandToSlave(i, pid, 'S');
+					sendProcessCommandToSlave(slave_idx, pid, 'R');
+				}
 			}
 		}
 	}
-
 
 
 	private void killProcess(int processId) {

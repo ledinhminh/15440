@@ -63,9 +63,6 @@ public class ServeThread extends Thread {
 			e.printStackTrace();
 			return;
 		}
-		
-		
-		
 
         if (m.firstTime() == true) {
             pm.addNewSlave(address);
