@@ -33,9 +33,7 @@ public class ServeThread extends Thread {
 	public void run() {
 		SlaveMessage m;
 		try {
-            System.out.println("here");
 			Object o = input.readObject();
-            System.out.println("readobj");
 			if (!(o instanceof SlaveMessage)) {
 				//well fuck, they didn't send the right object. Fuck um we'll ignore it
 				return;

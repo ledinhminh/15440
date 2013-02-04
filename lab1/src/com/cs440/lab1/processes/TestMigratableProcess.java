@@ -85,13 +85,11 @@ public class TestMigratableProcess implements MigratableProcess {
 		}
 		
 		suspending = false;
-        System.out.println("bounce!");
 	}
 
 	@Override
 	public void suspend() {
 		suspending = true;
 		while(suspending && isRunning && !isFinished);
-        System.out.println("susBounce!");
 	}
 }

@@ -25,7 +25,6 @@ public class ProcessServer extends Thread {
 	}
 	
 	public void run() {
-        System.out.println("ProcessServer run()");
 		while (serverOn) {
 			try {
 				Socket sock = sSock.accept();
