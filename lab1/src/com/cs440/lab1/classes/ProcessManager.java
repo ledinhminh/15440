@@ -70,6 +70,10 @@ class SlaveHost {
 	public LinkedList<Integer> getProcessList() {
 		return process_list;
 	}
+    
+    public int getLoad() {
+        return process_list.size();
+    }
 }
 
 public class ProcessManager {
@@ -462,17 +466,32 @@ public class ProcessManager {
 		SlaveHost host;
 		int pid;
         System.out.println("BALANCE");
+        int load_avg = 0;
+        int current_load = 0;
+
+        //get an average load from the slavehosts
+        for (i = 0; i < slave_list.size(); i++) {
+            current_load = slave_list.get(i).getLoad();
+            load_avg += current_load;
+        }
+
+        load_avg /= slave_list.size();
+        //round
+        load_avg++;
+
 
 		for (i = 0; i < slave_list.size(); i++) {
 			host      = slave_list.get(i);
-			if ((pid = host.popProcess()) >= 0) {
-				slave_idx = random.nextInt(slave_list.size());
-                sendStopToSlave(slave_idx, pid);
-				sendProcessToSlave(slave_idx, pid);
+            while (host.getLoad() > load_avg) {
+			    if ((pid = host.popProcess()) >= 0) {
+				    slave_idx = random.nextInt(slave_list.size());
+                    sendStopToSlave(slave_idx, pid);
+				    sendProcessToSlave(slave_idx, pid);
+                }
 			}
 		}
 	}
-			
+
 
 
 	private void killProcess(int processId) {
