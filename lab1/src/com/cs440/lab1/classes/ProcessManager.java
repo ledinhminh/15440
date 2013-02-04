@@ -1,4 +1,4 @@
-package com.cs440.lab1.classes;
+//package com.cs440.lab1.classes;
 
 //TODO send slaves messages for load balancing
 
@@ -24,7 +24,7 @@ class MigratableProcess {
 }	
 */
 
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 //import com.cs440.lab1.interfaces.MigratableProcess;
 
@@ -43,6 +43,7 @@ class SlaveHost {
 	SlaveHost(InetAddress _iaddr) {
 		iaddr         = _iaddr;
 		process_count = 0;
+        process_list  = new LinkedList<Integer>();
 	}
 
 	public InetAddress getInetAddress() {
@@ -118,10 +119,22 @@ public class ProcessManager {
         processMap      = new HashMap<Integer, SlaveHost>();
         slave_list      = new LinkedList<SlaveHost>();
         threadToPid		= new HashMap<Thread, Integer>();
+        threadList      = new LinkedList<Thread>();
+        suspendedProcesses = new LinkedList<Integer>();
 		//server = new ProcessServer(port, this);
 	}
 	
 
+    private class BalanceTimer extends TimerTask {
+        ProcessManager pm;
+        BalanceTimer (ProcessManager _pm) {
+            pm = _pm;
+        }
+        public void run() {
+            pm.loadBalance();
+        }
+    }
+            
 
 	/**
 	 * newProcessId()
@@ -202,7 +215,7 @@ public class ProcessManager {
 	 * @return The deserialized MigratableProccess with id _id
 	 */
 	private MigratableProcess readProcess(int _id) {
-		String fileName = "processes/process_" + _id;
+		String fileName = "processes/process_" + _id + ".ser";
 		MigratableProcess p;
 		TransactionalFileInputStream fileStream = new TransactionalFileInputStream(fileName);
         System.out.println("readProcess");
@@ -281,7 +294,6 @@ public class ProcessManager {
 				//a slave anymore) and add to suspendedProcs
 				//also remove it from the slavehost instance
 				if (iaddr != null) {
-					suspendedProcesses.add(new Integer(processId));
 					processMap.remove(new Integer(processId));
 				}
 			}
@@ -297,7 +309,6 @@ public class ProcessManager {
 				//remove from suspended processes, add to processmap,
 				//add to corresponding SlaveSost instance
 				if (iaddr != null) {
-					suspendedProcesses.remove(new Integer(processId));
 					processMap.put(new Integer(processId), iaddrMap.get(iaddr));
 					iaddrMap.get(iaddr).pushProcess(processId);
 				}
@@ -354,28 +365,14 @@ public class ProcessManager {
 	 */
 	private void sendMessageToMaster(SlaveMessage msg) {
 		Socket sock;
-		OutputStream os;
-		ObjectOutputStream msg_os;
-
-		try {
-			sock   = new Socket(MASTER_HOSTNAME, MASTER_PORT);
-			os     = sock.getOutputStream();
-			msg_os = new ObjectOutputStream(os);
-		} catch (Exception e) {
-			System.err.println("sendMessageToMaster: setup error");
-			return;
-		}
-		
-		try {
-			//write the msg to the master
-			msg_os.writeObject(msg);
-			os.close();
-			msg_os.close();
-			sock.close();
-		} catch (Exception e) {
-			System.err.println("Error in sendMessageToMaster()");
-		}
-	}
+        try {
+            sock = new Socket(MASTER_HOSTNAME, MASTER_PORT);
+        } catch (Exception e) {
+            System.err.println("sendMessageToMaster: sock creation error");
+            return;
+        }
+	    sendMessageToSlave(msg, sock);
+    }
 
 	/**
 	 * sendMessageToSlave()
@@ -385,20 +382,28 @@ public class ProcessManager {
 	private void sendMessageToSlave(SlaveMessage msg, Socket sock) {
 		OutputStream os;
 		ObjectOutputStream msg_os;
+        InputStream is; ObjectInputStream msg_is;
 		try {
-			os = sock.getOutputStream();
+			os     = sock.getOutputStream();
 			msg_os = new ObjectOutputStream(os);
+            is     = sock.getInputStream();
+            msg_is = new ObjectInputStream(is);
+
 		} catch (Exception e) {
-			System.err.println("sendMessageToSlave: setup error");
+			System.err.println("sendMessage: setup error");
 			return;
 		}
 
 		try {
 			msg_os.writeObject(msg);
+            msg_os.flush();
+            msg_is.readObject();
+            is.close();
+            msg_is.close();
 			os.close();
 			msg_os.close();
 		} catch (Exception e) {
-			System.err.println("Error in sendMessageToSlave() write/close");
+			System.err.println("Error in sendMessage write/close");
 		}
 	}	
 		
@@ -433,9 +438,9 @@ public class ProcessManager {
 			MigratableProcess process = readProcess(processId);
 			if (process != null) {
 				Thread t = new Thread(process);
-				t.run();
 				threadToPid.put(t, processId);
 				threadList.add(t);
+                t.start();
 			}
 			//we can just send the same message back
 			pidMap.put(processId, process);
@@ -456,10 +461,13 @@ public class ProcessManager {
 		Random random = new Random();
 		SlaveHost host;
 		int pid;
+        System.out.println("BALANCE");
+
 		for (i = 0; i < slave_list.size(); i++) {
 			host      = slave_list.get(i);
 			if ((pid = host.popProcess()) >= 0) {
 				slave_idx = random.nextInt(slave_list.size());
+                sendStopToSlave(slave_idx, pid);
 				sendProcessToSlave(slave_idx, pid);
 			}
 		}
@@ -488,18 +496,19 @@ public class ProcessManager {
 		Thread thread;
 		int threadCount = threadList.size();
 		while(true) {
-			while ((thread = threadList.peek()) != null) {
+			for (i = 0; i < threadList.size(); i++) {
 				try {
+                    thread = threadList.get(i);
 					thread.join(THREAD_JOINTIME);
 				} catch (InterruptedException e) {
 					//remove it from the thread list
-					killProcess(threadToPid.get(thread).intValue());
-					try {
-						threadList.remove(thread);
-						threadToPid.remove(thread);
-					} catch (Exception e2) {}
-				}
-				
+                    continue;
+                } catch (Exception e) {
+                    continue;
+                }
+				killProcess(threadToPid.get(thread).intValue());
+				threadList.remove(thread);
+				threadToPid.remove(thread);
 			}
 		}
 
@@ -510,7 +519,10 @@ public class ProcessManager {
 	 * and monitoring stdin for new commands
 	 */
 	private void startMaster() {
-		long refTime = System.currentTimeMillis();
+		Timer timer = new Timer();
+
+        timer.schedule(new BalanceTimer(this), 5000, 5000);
+
 		//setup the input stream reader
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		
@@ -557,10 +569,10 @@ public class ProcessManager {
 			MigratableProcess newProcess;
 			try {
 				Class<MigratableProcess> processClass = (Class<MigratableProcess>)(Class.forName(args[0]));
-				
 				Constructor<MigratableProcess> processConstructor = processClass.getConstructor(String[].class);
-				
-				newProcess = processConstructor.newInstance((Object[])args);
+                Object[] obj = new Object[1];
+                obj[0] = (Object[])args;
+				newProcess = processConstructor.newInstance(obj);
 			
 			} catch (ClassNotFoundException e) {
 				//Couldn't link find that class. stupid user.
@@ -585,7 +597,7 @@ public class ProcessManager {
 				System.out.println("Invocation target exception for " + args[0]);
 				continue;
 			}
-
+            System.out.println("anus");
 			writeProcess(newProcess, currentProcessId);
 
 			//select a slave to send the process to
@@ -596,11 +608,6 @@ public class ProcessManager {
 			}
 			
 			currentProcessId = newProcessId();
-
-			if (System.currentTimeMillis() - refTime == BALANCE_TIME_MS) {
-				loadBalance();
-				refTime = System.currentTimeMillis();
-			}
 		}
 	}
 
@@ -620,17 +627,14 @@ public class ProcessManager {
 			OutputStream os  = sock.getOutputStream();
 			ObjectOutputStream oOs = new ObjectOutputStream(os);
 			oOs.writeObject(msg);
-			oOs.close();
-			os.close();
+			//oOs.close();
+			//os.close();
 			//sock.close();
-			SlaveMessage msg = new SlaveMessage(-1, 'B', true);
-			OutputStream os  = sock.getOutputStream();
 			ObjectInputStream oIs = new ObjectInputStream(sock.getInputStream());
-			ObjectOutputStream oOs = new ObjectOutputStream(os);
 			oOs.writeObject(msg);
 			oOs.flush();
             
-            		try {
+      		try {
 				String res = (String)oIs.readObject();
 				System.out.println("RESULT::::" + res);
 			} catch (ClassNotFoundException e) {
