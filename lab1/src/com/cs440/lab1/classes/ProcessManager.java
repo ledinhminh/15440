@@ -614,12 +614,12 @@ public class ProcessManager {
 			}
 			//setup as slave
 			Socket sock = new Socket(argv[1], MASTER_PORT);
-		    SlaveMessage msg = new SlaveMessage(-1, 'B', true);
-            OutputStream os  = sock.getOutputStream();
-            ObjectOutputStream oOs = new ObjectOutputStream(os);
-            oOs.writeObject(msg);
-            oOs.close();
-            os.close();
+			SlaveMessage msg = new SlaveMessage(-1, 'B', true);
+			OutputStream os  = sock.getOutputStream();
+			ObjectOutputStream oOs = new ObjectOutputStream(os);
+			oOs.writeObject(msg);
+			oOs.close();
+			os.close();
 			//sock.close();
 			System.out.println("creating the new processmanager....");
 			pm = new ProcessManager(false, argv[1]);
