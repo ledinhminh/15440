@@ -616,7 +616,6 @@ public class ProcessManager {
 			}
 			//setup as slave
 			Socket sock = new Socket(argv[1], MASTER_PORT);
-<<<<<<< HEAD
 			SlaveMessage msg = new SlaveMessage(-1, 'B', true);
 			OutputStream os  = sock.getOutputStream();
 			ObjectOutputStream oOs = new ObjectOutputStream(os);
@@ -624,15 +623,14 @@ public class ProcessManager {
 			oOs.close();
 			os.close();
 			//sock.close();
-=======
-		    SlaveMessage msg = new SlaveMessage(-1, 'B', true);
-            OutputStream os  = sock.getOutputStream();
-            ObjectInputStream oIs = new ObjectInputStream(sock.getInputStream());
-            ObjectOutputStream oOs = new ObjectOutputStream(os);
-            oOs.writeObject(msg);
-            oOs.flush();
+			SlaveMessage msg = new SlaveMessage(-1, 'B', true);
+			OutputStream os  = sock.getOutputStream();
+			ObjectInputStream oIs = new ObjectInputStream(sock.getInputStream());
+			ObjectOutputStream oOs = new ObjectOutputStream(os);
+			oOs.writeObject(msg);
+			oOs.flush();
             
-            try {
+            		try {
 				String res = (String)oIs.readObject();
 				System.out.println("RESULT::::" + res);
 			} catch (ClassNotFoundException e) {
@@ -641,10 +639,9 @@ public class ProcessManager {
 				e.printStackTrace();
 			}
             
-            oOs.close();
-            os.close();
+			oOs.close();
+			os.close();
 			sock.close();
->>>>>>> 91fe2c019381a06fa41b084cc75aed4518d07818
 			System.out.println("creating the new processmanager....");
 			pm = new ProcessManager(false, argv[1]);
 			pm.startSlave();
