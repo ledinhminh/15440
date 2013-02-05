@@ -125,6 +125,12 @@ public class MeterCheckProcess implements MigratableProcess {
 		}
 	}
 	
+	/**
+	 * Loads the dictionary meter mapping to memory from
+	 * a serialized file
+	 * 
+	 * @throws Exception
+	 */
 	private void loadDictMap() throws Exception {
 		//load the dictMap from file
 		ObjectInputStream os;
@@ -158,7 +164,6 @@ public class MeterCheckProcess implements MigratableProcess {
 			while (!suspending) {
 				if (dictMap == null) {
 					loadDictMap();
-					System.out.println("dict loaded");
 					continue;
 				}
 				
@@ -183,13 +188,6 @@ public class MeterCheckProcess implements MigratableProcess {
 				}
 
 				out.println(meterString);
-				System.out.println(inputLine + ":::" + meterString);
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					//ignore
-				}
-				
 			}
 
 		} catch (IOException e) {
@@ -199,7 +197,6 @@ public class MeterCheckProcess implements MigratableProcess {
 		}
 		
 		suspending = false;
-        System.out.println("Bounce!");
 	}
 		// TODO Auto-generated method stub
 

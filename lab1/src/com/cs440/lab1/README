@@ -1,0 +1,40 @@
+15-440 Lab 1
+Nick Zukoski (nmz)
+Kevin Bravo (kbravo)
+
+The ProcessManager and helpers are in classes
+MigratableProcess interface is in interfaces
+MigratableProcess implmentations are in processes
+
+To run:
+cd into classes,
+make clean
+make
+Then run java ProcessManager on the master
+and java ProcessManager -c <hostName> on each of the slaves
+
+The provided Processes:
+TestMigratableProcess <infile> <outFile>
+	Copies infile to outfile one line at a time, waiting
+	1 second between lines.
+
+RhymeProcess <infile> <outfile> <serialized rhyme dictionary file>
+	Sorts infile into outfile by each lines last words rhyme.
+	The serialized rhyme dictionary file is provided: rhymeMap.ser
+	NOTE: this process should not be churned between nodes as each time
+	it resumes execution it has to reload the dictionary file which can
+	take 30 seconds.
+
+	example call: "RhymeProcess in.txt out.txt rhymeMap.ser"
+
+MeterCheckProcess <infile> <outfile> <serialized meter dictionary file>
+	For every line in the infile, write a line to the outfile
+	which contains the spoken meter of the original line.
+	The serialized dictionary file is provided: meterMap.ser
+	NOTE: Also shouldn't be churned between nodes for the same reason
+	as above.
+	
+	example call: "MeterCheckProcess in.txt out.txt meterMap.ser"
+
+Also provided is an in.txt file which contains a few sonnets that can be read
+and checked for rhyme and meter. (source: http://examples.yourdictionary.com/sonnet-examples.html)

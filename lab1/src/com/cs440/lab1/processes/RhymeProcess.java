@@ -111,6 +111,10 @@ public class RhymeProcess implements MigratableProcess {
 		
 	}
 	
+	/**
+	 * Reads in the raw dictionary file and creates
+	 * the serialized mapping that can be used later
+	 */
 	private void buildDictMap() {
 		loadingDict = true;
 		DataInputStream in = new DataInputStream(dictFileStream);
@@ -171,6 +175,11 @@ public class RhymeProcess implements MigratableProcess {
 		loadingDict = false;
 	}
 	
+	/**
+	 * Loads in the serialized dictionary mappings
+	 * to memory
+	 * @throws Exception
+	 */
 	private void loadDictMap() throws Exception {
 		loadingDict = true;
 		//load the dictMap from file
@@ -220,7 +229,6 @@ public class RhymeProcess implements MigratableProcess {
 					loadDictMap();
 					//buildDictMap();
 					
-					System.out.println("dict loaded");
 					continue;
 				}
 				
@@ -235,12 +243,9 @@ public class RhymeProcess implements MigratableProcess {
 						continue;
 					}
 
-					System.out.println(inputLine);
 					String[] words = inputLine.split(" ");
 					String rhymeWord = words[words.length-1];
-					System.out.println("RhymeWord: " + rhymeWord);
 					String rhyme = dictMap.get(rhymeWord.toUpperCase());
-					System.out.println("Rhyme: " + rhyme);
 					
 					if (rhyme == null) {
 						//couldn't find the word in the dictionary
@@ -257,7 +262,6 @@ public class RhymeProcess implements MigratableProcess {
 						//everythings written
 						break;
 					}
-					System.out.println("writing");
 					SortingLine l = sortedArray[nextLineToWrite];
 					out.println(l);
 					nextLineToWrite++;
@@ -265,10 +269,9 @@ public class RhymeProcess implements MigratableProcess {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.out.println("errror dawg");
+			System.out.println("error running RhymeProcess");
 			doneProcessing = true;
 		}
-		System.out.println("done");
 		suspending = false;
 
 	}
@@ -282,68 +285,6 @@ public class RhymeProcess implements MigratableProcess {
 			} catch (InterruptedException e) {
 				//ignore
 			}
-	}
-	
-	public static void main(String[] argv) {
-		String[] args = {"/Users/nickzukoski/test/in.txt", "/Users/nickzukoski/test/out.txt", "/Users/nickzukoski/test/rhymeMap.ser"};
-		MigratableProcess p;
-		try {
-			p = new RhymeProcess(args);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}
-		
-		Thread t = new Thread(p);
-		t.start();
-		
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("suspending");
-		p.suspend();
-		System.out.println("suspended");
-		
-		FileOutputStream fs;
-		ObjectOutputStream os;
-		try {
-			fs = new FileOutputStream("/Users/nickzukoski/test/process.test");
-			os = new ObjectOutputStream(fs);
-			
-			os.writeObject(p);
-			
-			fs.close();
-			os.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-//		FileInputStream fs;
-//		ObjectInputStream os;
-//		MigratableProcess p;
-//			
-//		try {
-//			fs = new FileInputStream("/Users/nickzukoski/test/process.test");
-//			os = new ObjectInputStream(fs);
-//			p = (MigratableProcess)os.readObject();
-//		} catch (Exception e) {
-//			return;
-//		}
-//		System.out.println("loaded from disk");
-//
-//		Thread t = new Thread(p);
-//		t.start();
-//		System.out.println("started");
-			
-		
 	}
 
 }

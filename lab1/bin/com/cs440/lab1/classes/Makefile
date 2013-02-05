@@ -15,7 +15,7 @@ CLASSES = \
 	ProcessManager.java \
 	TestMigratableProcess.java \
 	MeterCheckProcess.java \
-	RhymeProcess.java
+	RhymeProcess.java \
 
 default: classes
 
