@@ -156,7 +156,7 @@ public class RhymeProcess implements MigratableProcess {
 		ObjectOutputStream os;
 		
 		try {
-			fs = new FileOutputStream("/Users/nickzukoski/test/rhymeMap.ser");
+			fs = new FileOutputStream("rhymeMap.ser");
 			os = new ObjectOutputStream(fs);
 			
 			os.writeObject(dictMap);

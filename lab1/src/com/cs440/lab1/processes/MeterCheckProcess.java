@@ -109,7 +109,7 @@ public class MeterCheckProcess implements MigratableProcess {
 		ObjectOutputStream os;
 		
 		try {
-			fs = new FileOutputStream("/Users/nickzukoski/test/dictMap.ser");
+			fs = new FileOutputStream("meterMap.ser");
 			os = new ObjectOutputStream(fs);
 			
 			os.writeObject(dictMap);
