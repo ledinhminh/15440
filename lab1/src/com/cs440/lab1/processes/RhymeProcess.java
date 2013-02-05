@@ -87,14 +87,14 @@ public class RhymeProcess implements MigratableProcess {
 	public RhymeProcess(String[] _args) throws Exception {
 		this.args = _args;
 		
-		if (_args.length != 3) {
+		if (_args.length != 4) {
 			System.out.println("Usage: RhymeProcess <infile> <outfile> <dictfile>");
 			throw new Exception("Invalid Arguments");
 		}
 		
-		inFile = args[0];
-		outFile = args[1];
-		dictFile = args[2];
+		inFile = args[1];
+		outFile = args[2];
+		dictFile = args[3];
 		
 		
 		dictFileStream = new TransactionalFileInputStream(dictFile);
@@ -156,7 +156,7 @@ public class RhymeProcess implements MigratableProcess {
 		ObjectOutputStream os;
 		
 		try {
-			fs = new FileOutputStream("/Users/nickzukoski/test/rhymeMap.ser");
+			fs = new FileOutputStream("rhymeMap.ser");
 			os = new ObjectOutputStream(fs);
 			
 			os.writeObject(dictMap);
@@ -210,6 +210,7 @@ public class RhymeProcess implements MigratableProcess {
 
 	@Override
 	public void run() {
+		suspending = false;
 		startedProcessing = true;
 		DataInputStream in = new DataInputStream(inFileStream);
 		PrintStream out = new PrintStream(outFileStream);
