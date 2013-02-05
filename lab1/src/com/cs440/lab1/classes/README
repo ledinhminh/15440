@@ -1,0 +1,8 @@
+test processes in ./processes/
+interfaces in ./interfaces/
+classes in ./classes/
+
+cd into ./classes
+make clean
+make 
+and yay do stuff :)))
