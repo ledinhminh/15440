@@ -87,7 +87,7 @@ public class RhymeProcess implements MigratableProcess {
 	public RhymeProcess(String[] _args) throws Exception {
 		this.args = _args;
 		
-		if (_args.length != 3) {
+		if (_args.length != 4) {
 			System.out.println("Usage: RhymeProcess <infile> <outfile> <dictfile>");
 			throw new Exception("Invalid Arguments");
 		}
