@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.cs440.lab1.classes.TransactionalFileInputStream;
-import com.cs440.lab1.classes.TransactionalFileOutputStream;
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.classes.TransactionalFileInputStream;
+//import com.cs440.lab1.classes.TransactionalFileOutputStream;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 public class RhymeProcess implements MigratableProcess {
 	
@@ -92,9 +92,9 @@ public class RhymeProcess implements MigratableProcess {
 			throw new Exception("Invalid Arguments");
 		}
 		
-		inFile = args[0];
-		outFile = args[1];
-		dictFile = args[2];
+		inFile = args[1];
+		outFile = args[2];
+		dictFile = args[3];
 		
 		
 		dictFileStream = new TransactionalFileInputStream(dictFile);
@@ -210,6 +210,7 @@ public class RhymeProcess implements MigratableProcess {
 
 	@Override
 	public void run() {
+		suspending = false;
 		startedProcessing = true;
 		DataInputStream in = new DataInputStream(inFileStream);
 		PrintStream out = new PrintStream(outFileStream);
