@@ -12,9 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-import com.cs440.lab1.classes.TransactionalFileInputStream;
-import com.cs440.lab1.classes.TransactionalFileOutputStream;
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.classes.TransactionalFileInputStream;
+//import com.cs440.lab1.classes.TransactionalFileOutputStream;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 public class MeterCheckProcess implements MigratableProcess {
 	/**
@@ -42,14 +42,14 @@ public class MeterCheckProcess implements MigratableProcess {
 	public MeterCheckProcess(String[] _args) throws Exception {
 		this.args = _args;
 		
-		if (_args.length != 3) {
+		if (_args.length != 4) {
 			System.out.println("Usage: MeterCheckProcess <infile> <outfile> <dictfile>");
 			throw new Exception("Invalid Arguments");
 		}
 		
-		inFile = args[0];
-		outFile = args[1];
-		dictFile = args[2];
+		inFile = args[1];
+		outFile = args[2];
+		dictFile = args[3];
 		
 		
 		dictFileStream = new TransactionalFileInputStream(dictFile);
@@ -198,6 +198,7 @@ public class MeterCheckProcess implements MigratableProcess {
 		}
 		
 		suspending = false;
+        System.out.println("Bounce!");
 	}
 		// TODO Auto-generated method stub
 

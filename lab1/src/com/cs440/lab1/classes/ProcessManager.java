@@ -17,7 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.io.InputStream;
 import java.io.OutputStream;
-import com.cs440.lab1.interfaces.MigratableProcess;
+//import com.cs440.lab1.interfaces.MigratableProcess;
 
 //import com.cs440.lab1.interfaces.MigratableProcess;
 
@@ -273,12 +273,14 @@ public class ProcessManager {
 				//remove from the pidToSlaveHost and pidToProcess, pop it from
 				//the SlaveHost
 				if (iaddr != null) {
-                    String[] term = {"" + processId, 
-                                   pidToProcess.get(new Integer(processId)).toString()};
-                    terminatedProcesses.add(term);
-					pidToSlaveHost.remove(new Integer(processId));
-					pidToProcess.remove(new Integer(processId));
-                    iaddrToSlaveHost.get(iaddr).getProcessList().remove(new Integer(processId));
+                    MigratableProcess process = pidToProcess.get(new Integer(processId));
+                    if (process != null) {
+                        String[] term = {"" + processId, process.toString()};
+                        terminatedProcesses.add(term);
+					    pidToSlaveHost.remove(new Integer(processId));
+					    pidToProcess.remove(new Integer(processId));
+                        iaddrToSlaveHost.get(iaddr).getProcessList().remove(new Integer(processId));
+                    }
 				}
 			}
 			else if (action == 'R') {
@@ -406,8 +408,12 @@ public class ProcessManager {
 		if (action == 'S') {
 			//suspend the process, send back sus message
 			MigratableProcess process = pidToProcess.get(processId);
-			process.suspend();
-			writeProcess(process, processId);
+            //sometimes an IO error might cause the process to be
+            //read/written improperly.  imma test for dat ish
+            if (process != null) {
+			    process.suspend();
+			    writeProcess(process, processId);
+            }
 			return 0;
 		}
 		else if (action == 'R') {
@@ -418,9 +424,8 @@ public class ProcessManager {
 				threadToPid.put(t, processId);
 				threadList.add(t);
                 t.start();
-			}
-			//we can just send the same message back
-			pidToProcess.put(processId, process);
+			    pidToProcess.put(processId, process);
+            }
 			return 0;
 		}
 		else {
@@ -615,7 +620,7 @@ public class ProcessManager {
 			}
 			writeProcess(newProcess, currentProcessId);
 			//select a slave to send the process to
-			if (currentProcessId >= 0) {
+			if (currentProcessId >= 0 && slaveList.size() > 0) {
 				int slaveId = currentProcessId % slaveList.size();
 				pidToProcess.put(currentProcessId, newProcess);
 				sendProcessCommandToSlave(slaveId, currentProcessId, 'R');
