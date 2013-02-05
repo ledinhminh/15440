@@ -11,9 +11,10 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-//import com.cs440.lab1.classes.TransactionalFileInputStream;
-//import com.cs440.lab1.classes.TransactionalFileOutputStream;
-//import com.cs440.lab1.interfaces.MigratableProcess;
+
+import com.cs440.lab1.classes.TransactionalFileInputStream;
+import com.cs440.lab1.classes.TransactionalFileOutputStream;
+import com.cs440.lab1.interfaces.MigratableProcess;
 
 public class MeterCheckProcess implements MigratableProcess {
 	/**
@@ -24,7 +25,11 @@ public class MeterCheckProcess implements MigratableProcess {
 	private String inFile,outFile;
 	private String dictFile;
 	
-	private volatile Map<String, String> dictMap;
+	//transient because it would take too long to
+	//serialize/deserialze it. So instead we do that
+	//during the main run loop so that it doesnt block
+	//the master process
+	private transient Map<String, String> dictMap;
 	
 	private TransactionalFileInputStream dictFileStream;
 	private TransactionalFileInputStream inFileStream;
@@ -32,6 +37,7 @@ public class MeterCheckProcess implements MigratableProcess {
 	
 	private volatile boolean suspending;
 	private boolean doneProcessing;
+	private boolean startedProcessing;
 	
 	public MeterCheckProcess(String[] _args) throws Exception {
 		this.args = _args;
@@ -121,7 +127,6 @@ public class MeterCheckProcess implements MigratableProcess {
 	
 	private void loadDictMap() throws Exception {
 		//load the dictMap from file
-		FileInputStream fs;
 		ObjectInputStream os;
 		try {
 			os = new ObjectInputStream(dictFileStream);
@@ -145,6 +150,7 @@ public class MeterCheckProcess implements MigratableProcess {
 	
 	@Override
 	public void run() {
+		startedProcessing = true;
 		DataInputStream in = new DataInputStream(inFileStream);
 		PrintStream out = new PrintStream(outFileStream);
 		try {
@@ -198,69 +204,12 @@ public class MeterCheckProcess implements MigratableProcess {
 	@Override
 	public void suspend() {
 		suspending = true;
-		while (suspending && !doneProcessing);
-	}
-	
-	public static void main(String[] argv) {
-		String[] args = {"/Users/nickzukoski/test/in.txt", "/Users/nickzukoski/test/out.txt", "/Users/nickzukoski/test/dictMap.ser"};
-		MigratableProcess p;
-		try {
-			p = new MeterCheckProcess(args);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}
-		
-		Thread t = new Thread(p);
-		t.start();
-		
-		try {
-			Thread.sleep(20000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("suspending");
-		p.suspend();
-		System.out.println("suspended");
-		
-		FileOutputStream fs;
-		ObjectOutputStream os;
-		try {
-			fs = new FileOutputStream("/Users/nickzukoski/test/process.test");
-			os = new ObjectOutputStream(fs);
-			
-			os.writeObject(p);
-			
-			fs.close();
-			os.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-//		FileInputStream fs;
-//		ObjectInputStream os;
-//		MigratableProcess p;
-//			
-//		try {
-//			fs = new FileInputStream("/Users/nickzukoski/test/process.test");
-//			os = new ObjectInputStream(fs);
-//			p = (MigratableProcess)os.readObject();
-//		} catch (Exception e) {
-//			return;
-//		}
-//		System.out.println("loaded from disk");
-//
-//		Thread t = new Thread(p);
-//		t.start();
-//		System.out.println("started");
-			
-		
+		while (suspending && startedProcessing && !doneProcessing)
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				//ignore
+			}
 	}
 
 }

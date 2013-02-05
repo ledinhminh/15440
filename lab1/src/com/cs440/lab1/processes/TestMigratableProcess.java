@@ -13,9 +13,9 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 
-//import com.cs440.lab1.classes.TransactionalFileInputStream;
-//import com.cs440.lab1.classes.TransactionalFileOutputStream;
-//import com.cs440.lab1.interfaces.MigratableProcess;
+import com.cs440.lab1.classes.TransactionalFileInputStream;
+import com.cs440.lab1.classes.TransactionalFileOutputStream;
+import com.cs440.lab1.interfaces.MigratableProcess;
 
 public class TestMigratableProcess implements MigratableProcess {
 

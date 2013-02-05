@@ -17,7 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.io.InputStream;
 import java.io.OutputStream;
-//import com.cs440.lab1.interfaces.MigratableProcess;
+import com.cs440.lab1.interfaces.MigratableProcess;
 
 //import com.cs440.lab1.interfaces.MigratableProcess;
 
