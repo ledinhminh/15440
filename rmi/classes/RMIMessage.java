@@ -1,6 +1,7 @@
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 
 public class RMIMessage implements Serializable  {
@@ -19,16 +20,9 @@ public class RMIMessage implements Serializable  {
 	boolean exceptionWasThrown;
 	Exception exception;
 
-	public RMIMessage(String _methodName, Object[] _args) {
-		this.args = _args;
+	RMIMessage(String _methodName, Object[] _args) {
+		setArgs(_args);
 		this.methodName = _methodName;
-		argTypes = new Class<?>[args.length];
-		for (int i = 0; i < args.length; i++) {
-			if (args[i].getClass().equals(Integer.class))
-				argTypes[i] = Integer.TYPE;
-			else
-				argTypes[i] = args[i].getClass();
-		}
 	}
 	
 	public Object[] getArgs() {
@@ -40,10 +34,15 @@ public class RMIMessage implements Serializable  {
 		
 		argTypes = new Class<?>[args.length];
 		for (int i = 0; i < args.length; i++) {
-			if (args[i].getClass().equals(Integer.class))
-				argTypes[i] = Integer.TYPE;
-			else
-				argTypes[i] = args[i].getClass();
+			Class argClass = args[i].getClass();
+			
+			Class[] interfaces = argClass.getInterfaces();
+			if (Arrays.asList(interfaces).contains(Remote440.class)) {
+				//it is a remote object stub
+				//maybe should be doing something?
+			}
+			
+			argTypes[i] = argClass;
 		}
 	}
 
@@ -71,6 +70,13 @@ public class RMIMessage implements Serializable  {
 		return exception;
 	}
 	
+	/**
+	 * Invokes the specified method on the given object, storing the
+	 * result and any exceptions thrown during execution.
+	 * 
+	 * @param callee The object to call the method on
+	 * @return true if successfully invoked, false otherwise
+	 */
 	public boolean invokeOnObject(Object callee) {
 		//get a handle on the method to invoke
 		Method m;

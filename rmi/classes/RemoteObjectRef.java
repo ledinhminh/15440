@@ -1,5 +1,6 @@
 import java.io.*;
 import java.lang.*;
+import java.net.InetAddress;
 
 public class RemoteObjectRef {
     InetAddress iAddr;
@@ -15,6 +16,29 @@ public class RemoteObjectRef {
     }
 
     Object localise() {
-    
-
+    	String stubClassName = remoteInterfaceName + "_stub";
+    	Object stub;
+    	
+    	try {
+    		Class c = Class.forName(stubClassName);
+			stub = c.newInstance();
+			((Remote440)stub).setRemoteRef(this);
+			
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+    	
+    	return stub;
+    	
     }
+}

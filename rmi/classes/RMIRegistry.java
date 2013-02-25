@@ -1,10 +1,6 @@
 import java.io.*;
 import java.lang.*;
 
-
-
-
-
 public class RMIRegistry{
     String host;
     int port;
