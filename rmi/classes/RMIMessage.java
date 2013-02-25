@@ -1,4 +1,5 @@
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 
@@ -14,13 +15,19 @@ public class RMIMessage implements Serializable  {
 	String methodName;
 	
 	Object returnValue;
+	
+	boolean exceptionWasThrown;
+	Exception exception;
 
 	public RMIMessage(String _methodName, Object[] _args) {
 		this.args = _args;
 		this.methodName = _methodName;
 		argTypes = new Class<?>[args.length];
 		for (int i = 0; i < args.length; i++) {
-			argTypes[i] = args[i].getClass();
+			if (args[i].getClass().equals(Integer.class))
+				argTypes[i] = Integer.TYPE;
+			else
+				argTypes[i] = args[i].getClass();
 		}
 	}
 	
@@ -33,7 +40,10 @@ public class RMIMessage implements Serializable  {
 		
 		argTypes = new Class<?>[args.length];
 		for (int i = 0; i < args.length; i++) {
-			argTypes[i] = args[i].getClass();
+			if (args[i].getClass().equals(Integer.class))
+				argTypes[i] = Integer.TYPE;
+			else
+				argTypes[i] = args[i].getClass();
 		}
 	}
 
@@ -56,28 +66,69 @@ public class RMIMessage implements Serializable  {
 	public void setReturnValue(Object returnValue) {
 		this.returnValue = returnValue;
 	}
+
+	public Exception getException() {
+		return exception;
+	}
 	
-	public static void main(String[] args) {
-		String s = "abcd";
-		Object[] _args = {"efd"};
-		RMIMessage message = new RMIMessage("concat", _args);
-		
+	public boolean invokeOnObject(Object callee) {
+		//get a handle on the method to invoke
 		Method m;
 		try {
-			if (_args.length == 0) {
-				m = String.class.getMethod(message.getMethodName());
-
+			if (args.length == 0) {
+				m = String.class.getMethod(methodName);
 			}
 			else {
-				m = String.class.getMethod(message.getMethodName(), message.getArgTypes());
+				m = String.class.getMethod(methodName, argTypes);
 			}
 		} catch (SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return false;
 		} catch (NoSuchMethodException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return false;
 		}
+		try {
+			returnValue = m.invoke(callee, args);
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (InvocationTargetException e) {
+			//there was an underlying exception
+			exceptionWasThrown = true;
+			exception = (Exception)e.getCause();
+			returnValue = null;
+			return true;
+		} 
+		
+		return true;
+	}
+	
+	public static void main(String[] args) {
+		String s = "abcda";
+		Object[] _args = {2};
+		RMIMessage message = new RMIMessage("charAt", _args);
+		if(message.invokeOnObject(s)) {
+			//it twerked
+			if (message.exceptionWasThrown) {
+				//but there was an exception!
+				message.getException().printStackTrace();
+			}
+			else {
+				System.out.println(message.getReturnValue());
+			}
+		}
+		else {
+			//shit didn't work yo
+		}
+		
 	}
 	
 }
