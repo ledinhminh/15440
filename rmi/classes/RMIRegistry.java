@@ -56,5 +56,19 @@ public class RMIRegistry{
             return null;
         }
 
+    }
+
+    public String getRegistryHostName() {
+        return host;
+    }
+
+    public InetAddress getRegistryInetAddress() {
+        return InetAddress.getByAddress(host);
+    }
+
+    public int getRemoteRegistryPort() {
+        return port;
+    }
+
         
 }
