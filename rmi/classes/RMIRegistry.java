@@ -17,6 +17,11 @@ public class RMIRegistry {
         port = _port;
     }
 
+    RMIRegistry(String _host, int _port) throws UnknownHostException {
+        host = InetAddress.getByName(_host);
+        port = _port;
+    }
+
     public RemoteObjectRef getRemoteObjectRef (String objectName) 
                                                 throws IOException
     {
