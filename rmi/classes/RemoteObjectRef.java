@@ -1,14 +1,10 @@
-import java.io.*;
-import java.lang.*;
 import java.net.InetAddress;
 
 public class RemoteObjectRef {
     InetAddress iAddr;
-    int port;
+	int port;
     int objKey;
     String remoteInterfaceName;
-
-
 
     public RemoteObjectRef(InetAddress _iAddr, int _port, int _objKey, String iname) {
         iAddr  = _iAddr;
@@ -47,6 +43,29 @@ public class RemoteObjectRef {
     public InetAddress getInetAddress() {
         return iAddr;
     }
+    
+    public void setPort(int port) {
+		this.port = port;
+	}
+    
+    public int getPort() {
+    	return port;
+    }
+    public int getObjKey() {
+		return objKey;
+	}
+
+	public void setObjKey(int objKey) {
+		this.objKey = objKey;
+	}
+
+	public String getRemoteInterfaceName() {
+		return remoteInterfaceName;
+	}
+
+	public void setRemoteInterfaceName(String remoteInterfaceName) {
+		this.remoteInterfaceName = remoteInterfaceName;
+	}
 
     boolean remoteEquals(RemoteObjectRef ror) {
         return (iAddr == ror.getInetAddress());

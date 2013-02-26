@@ -2,12 +2,6 @@ import java.io.*;
 import java.lang.*;
 import java.net.*;
 
-
-
-
-
-
-
 public class RMIRegistryMessage implements Serializable {
     private char msgType;
     private String objectName;

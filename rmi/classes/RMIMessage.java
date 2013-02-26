@@ -10,15 +10,17 @@ public class RMIMessage implements Serializable  {
 	 */
 	private static final long serialVersionUID = -4086249581158035244L;
 	
-	Object[] args;
-	Class<?>[] argTypes;
+	private Object[] args;
+	private Class<?>[] argTypes;
 
-	String methodName;
+	private String methodName;
 	
-	Object returnValue;
+	private Object returnValue;
 	
-	boolean exceptionWasThrown;
-	Exception exception;
+	private boolean exceptionWasThrown;
+	private Exception exception;
+	
+	private RemoteObjectRef ror;
 
 	RMIMessage(String _methodName, Object[] _args) {
 		setArgs(_args);
@@ -66,8 +68,19 @@ public class RMIMessage implements Serializable  {
 		this.returnValue = returnValue;
 	}
 
+	public boolean exceptionWasThrown() {
+		return exceptionWasThrown;
+	}
+	
 	public Exception getException() {
 		return exception;
+	}
+	public RemoteObjectRef getRor() {
+		return ror;
+	}
+
+	public void setRor(RemoteObjectRef ror) {
+		this.ror = ror;
 	}
 	
 	/**
@@ -82,10 +95,10 @@ public class RMIMessage implements Serializable  {
 		Method m;
 		try {
 			if (args.length == 0) {
-				m = String.class.getMethod(methodName);
+				m = callee.getClass().getMethod(methodName);
 			}
 			else {
-				m = String.class.getMethod(methodName, argTypes);
+				m = callee.getClass().getMethod(methodName, argTypes);
 			}
 		} catch (SecurityException e) {
 			// TODO Auto-generated catch block
@@ -115,26 +128,6 @@ public class RMIMessage implements Serializable  {
 		} 
 		
 		return true;
-	}
-	
-	public static void main(String[] args) {
-		String s = "abcda";
-		Object[] _args = {2};
-		RMIMessage message = new RMIMessage("charAt", _args);
-		if(message.invokeOnObject(s)) {
-			//it twerked
-			if (message.exceptionWasThrown) {
-				//but there was an exception!
-				message.getException().printStackTrace();
-			}
-			else {
-				System.out.println(message.getReturnValue());
-			}
-		}
-		else {
-			//shit didn't work yo
-		}
-		
 	}
 	
 }
