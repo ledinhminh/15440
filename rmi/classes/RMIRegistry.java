@@ -45,9 +45,8 @@ public class RMIRegistry {
             e.printStackTrace();
         }
 
-        RMIRegistryMessage lookup = new RMIRegistryMessage(LOOKUP, objectName);
         
-        oOs.writeObject(lookup);
+        oOs.writeObject(new RMIRegistryMessage(LOOKUP, objectName));
 
         RemoteObjectRef ror    = null;
         RMIRegistryMessage rsp = null;
@@ -55,10 +54,12 @@ public class RMIRegistry {
         try {
             rsp = (RMIRegistryMessage)oIs.readObject();
         } catch (ClassNotFoundException e) {
+            //TODO do we need to send an ack here?
+            oOs.writeObject(new String("ACK"));
             e.printStackTrace();
         }
 
-        //TODO send an ACK
+        oOs.writeObject(new String("ACK"));
 
         if (rsp.getMessageType() == FOUND) {
             ror = rsp.getRemoteObjectRef();
