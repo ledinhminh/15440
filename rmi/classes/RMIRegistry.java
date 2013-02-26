@@ -1,65 +1,80 @@
 import java.io.*;
 import java.lang.*;
+import java.net.*;
 
-public class RMIRegistry{
-    String host;
+
+public class RMIRegistry {
+    InetAddress host;
     int port;
 
-    RMIRegistry(String _host, int _port) {
+    private static final char FINDREG = 'r';
+    private static final char ISREG   = 'i';
+    private static final char LOOKUP  = 'l';
+    private static final char FOUND   = 'f';
+
+    RMIRegistry(InetAddress _host, int _port) {
         host = _host;
         port = _port;
     }
 
-    public RemoteObjectRef getRemoteObjectRef(String objectName) {
-        
+    public RemoteObjectRef getRemoteObjectRef (String objectName) 
+                                                throws IOException
+    {
+        Socket sock = null;
+
         try {
-            Socket sock = new Socket(Host, Port);
+            sock = new Socket(host, port);
         } catch (Exception e) {
             System.err.println("getRemoteObjectRef: error creating socket");
         }
 
+        ObjectOutputStream oOs = null;
+        ObjectInputStream oIs  = null;
+
+        RMIRegistryMessage msg = new RMIRegistryMessage(FINDREG);
+            
+        oOs = new ObjectOutputStream(sock.getOutputStream());
+        oIs = new ObjectInputStream(sock.getInputStream());
+        oOs.writeObject(msg);
+            
         try {
-            RMIRegistryMessage msg = new RMIRegistryMessage('?', true);
-            ObjectOutputStream oOs = new ObjectOutputStream(sock.getOutputStream);
-            ObjectInputStream  oIs = new ObjectInputStream(sock.getInputStream());
-            oOs.writeObject(msg);
-        } catch (Exception e) {
-            System.err.println("getRemoteObjectRef: error writing first message");
+            if (((RMIRegistryMessage)oIs.readObject()).getMessageType() == ISREG) {
+                System.out.println("Found a registry!");
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
 
-        if ((RMIRegistryMessage)oIs.readObject().getResponseChar() == 'y')
-            System.out.println("Found a registry!");
-
-        RMIRegistryMessage lookup = new RMIRegistryMessage('l', objectName);
+        RMIRegistryMessage lookup = new RMIRegistryMessage(LOOKUP, objectName);
         
+        oOs.writeObject(lookup);
+
+        RemoteObjectRef ror    = null;
+        RMIRegistryMessage rsp = null;
+
         try {
-            oOs.writeObject(lookup);
-        } catch (Exception e) {
-            System.err.println("getRemoteObjectRef: Error sending lookup msg");
+            rsp = (RMIRegistryMessage)oIs.readObject();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
 
-        RemoteObjectRef ror;
-        try {
-            RMIRegistryMessage rsp = (RMIRegistryMessage)oIs.readObject();
-        } catch (Exception e) {
-            System.err.println("getRemoteObjectRef: Error reading response");
-            return null;
-        }
+        //TODO send an ACK
 
-        if (rsp.getResponseChar() == 'f') {
-            ror = rsp.getRMIObjectRef();
+        if (rsp.getMessageType() == FOUND) {
+            ror = rsp.getRemoteObjectRef();
         } else {
             return null;
         }
 
+        return ror;
     }
 
     public String getRegistryHostName() {
-        return host;
+        return host.toString();
     }
 
     public InetAddress getRegistryInetAddress() {
-        return InetAddress.getByAddress(host);
+        return host;
     }
 
     public int getRemoteRegistryPort() {

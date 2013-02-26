@@ -8,6 +8,8 @@ public class RemoteObjectRef {
     int objKey;
     String remoteInterfaceName;
 
+
+
     public RemoteObjectRef(InetAddress _iAddr, int _port, int _objKey, String iname) {
         iAddr  = _iAddr;
         port   = _port;
@@ -41,4 +43,13 @@ public class RemoteObjectRef {
     	return stub;
     	
     }
+
+    public InetAddress getInetAddress() {
+        return iAddr;
+    }
+
+    boolean remoteEquals(RemoteObjectRef ror) {
+        return (iAddr == ror.getInetAddress());
+    }
+
 }
