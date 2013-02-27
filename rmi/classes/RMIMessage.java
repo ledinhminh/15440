@@ -42,6 +42,7 @@ public class RMIMessage implements Serializable  {
 			if (Arrays.asList(interfaces).contains(Remote440.class)) {
 				//it is a remote object stub
 				//maybe should be doing something?
+                
 			}
 			
 			argTypes[i] = argClass;
@@ -105,9 +106,8 @@ public class RMIMessage implements Serializable  {
 			e.printStackTrace();
 			return false;
 		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
+			System.err.println(methodName + ": No such method");
+            return false;
 		}
 		try {
 			returnValue = m.invoke(callee, args);

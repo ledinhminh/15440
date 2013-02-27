@@ -11,6 +11,8 @@ public class RMIRegistry {
     private static final char ISREG   = 'i';
     private static final char LOOKUP  = 'l';
     private static final char FOUND   = 'f';
+    private static final char LISTMETHODS = 'm';
+
 
     RMIRegistry(InetAddress _host, int _port) {
         host = _host;
@@ -87,5 +89,45 @@ public class RMIRegistry {
         return port;
     }
 
+    public String[] listRemoteNames() {
+        Socket sock;
+        ObjectInputStream oIs;
+        ObjectOutputStream oOs;
+        String[] names;
+
         
+        try {
+            sock = new Socket(host, port);
+        } catch (Exception e) {
+            System.err.println("listRemoteNames: error creating socket");
+            return null;
+        }
+
+        try {
+            oIs = new ObjectInputStream(sock.getInputStream());
+            oOs = new ObjectOutputStream(sock.getOutputStream());
+        } catch (Exception e) {
+            System.err.println("listRemoteNames: error creating I/O streams");
+            return null;
+        }
+ 
+        RMIRegistryMessage req = new RMIRegistryMessage(LISTMETHODS);
+
+        try {
+            oOs.writeObject(req);
+            names = (String[])oIs.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        try {
+            oOs.writeObject(new String("ACK"));
+        } catch (Exception e) {
+            System.err.println("listRemoteNames error: failed to send ACK");
+        }
+
+        return names;
+    }
+
 }
