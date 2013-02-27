@@ -12,7 +12,8 @@ public class RMIServer {
     private static final char ISREG   = 'i';
     private static final char LOOKUP  = 'l';
     private static final char FOUND   = 'f';
-    private static final char LISTMETHODS = 'm';
+    private static final char LIST    = 'm';
+    private static final char TERM    = 't';
 
     public static void main (String args[]) {
         localHost  = InetAddress.getLocalHost();
@@ -69,7 +70,7 @@ public class RMIServer {
                 RMIServerThread serveThread;
 
                 //create a thread for the guy
-                serveThread = RMIServerThread(sock);
+                serveThread = new RMIServerThread(sock);
                 serveThread.start();
 
             }

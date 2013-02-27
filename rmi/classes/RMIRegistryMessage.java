@@ -11,6 +11,8 @@ public class RMIRegistryMessage implements Serializable {
     private static final char ISREG   = 'i';
     private static final char LOOKUP  = 'l';
     private static final char FOUND   = 'f';
+    private static final char LIST    = 'm';
+    private static final char TERM    = 't';
 
     public RMIRegistryMessage (char _msgType) {
         msgType = _msgType;
