@@ -5,6 +5,7 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
+	RMIServerThread.java \
 	RMIRegistryMessage.java \
 	RMIRegistry.java \
 	RMIMessage.java \

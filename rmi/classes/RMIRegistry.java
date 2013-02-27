@@ -61,7 +61,7 @@ public class RMIRegistry {
         try {
             rsp = (RMIRegistryMessage)oIs.readObject();
         } catch (ClassNotFoundException e) {
-            //TODO do we need to send an ack here?
+            //TODO do we need to send an ACK here?
             oOs.writeObject(new String("ACK"));
             e.printStackTrace();
         }
