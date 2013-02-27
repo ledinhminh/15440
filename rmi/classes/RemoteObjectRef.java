@@ -6,6 +6,8 @@ public class RemoteObjectRef {
     int objKey;
     String remoteInterfaceName;
 
+
+
     public RemoteObjectRef(InetAddress _iAddr, int _port, int _objKey, String iname) {
         iAddr  = _iAddr;
         port   = _port;
