@@ -4,9 +4,9 @@ import java.net.*;
 
 
 public class RMIServer {
-    InetAddress localHost;
-    int listenPort = 15440;
-    ServerSocket sSock;
+    private static InetAddress localHost;
+    private static int listenPort = 15440;
+    private static ServerSocket sSock;
 
     private static final char FINDREG = 'r';
     private static final char ISREG   = 'i';
@@ -16,18 +16,23 @@ public class RMIServer {
     private static final char TERM    = 't';
 
     public static void main (String args[]) {
-        localHost  = InetAddress.getLocalHost();
 
-        if (args.length() != 3) {
-            System.err.println("Wrong number of args!");
+        try {
+            localHost  = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        if (args.length != 1) {
+            System.err.println("Wrong number of args!" + args.length);
             return;
         }
 
-        listenPort = args[2];
-        
+        listenPort = (new Integer(args[0])).intValue();
+ 
         try {
             sSock = new ServerSocket(listenPort);
-        } catch (SocketException e) {
+        } catch (Exception e) {
             System.err.println("Error creating the server socket! :) :) :)");
             return;
         }
@@ -51,7 +56,11 @@ public class RMIServer {
                 oIs = new ObjectInputStream(sock.getInputStream());
             } catch (Exception e) {
                 System.err.println("error getting I/O streams from client.");
-                sock.close();
+                try {
+                    sock.close();
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
                 continue;
             }
 
@@ -62,7 +71,11 @@ public class RMIServer {
                 msg = (RMIRegistryMessage)oIs.readObject();
             } catch (Exception e) {
                 System.err.println("Error receiving msg");
-                sock.close();
+                try {
+                    sock.close();
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
                 continue;
             }
 

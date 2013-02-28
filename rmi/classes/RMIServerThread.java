@@ -51,8 +51,9 @@ public class RMIServerThread extends Thread {
             } catch (IOException e) {
                 System.err.println("ServerThread: error creating socket I/O streams");
                 numTries--;
-                if (numTries == 0) 
+                if (numTries == 0) { 
                     try {clientSock.close();} catch (IOException e1) {};
+                }
                 continue;
             }
 

@@ -6,6 +6,7 @@ JC = javac
 
 CLASSES = \
 	RMIServerThread.java \
+	RMIServer.java \
 	RMIRegistryMessage.java \
 	RMIRegistry.java \
 	RMIMessage.java \
