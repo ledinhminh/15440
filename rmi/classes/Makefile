@@ -5,13 +5,17 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
-	RMIServerThread.java \
-	RMIServer.java \
-	RMIRegistryMessage.java \
 	RMIRegistry.java \
+	RMIClient1.java \
 	RMIMessage.java \
+	RMIRegistryMessage.java \
+	RMIServer.java \
+	RMIServerThread.java \
 	Remote440.java \
+	Remote440Exception.java \
 	RemoteObjectRef.java \
+	RemoteStub.java \
+	TestRemoteObject.java \
 	RemoteStub.java \
 
 default: classes

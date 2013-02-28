@@ -14,25 +14,26 @@ public class RMIRegistry {
     private static final char LISTMETHODS = 'm';
 
 
-    RMIRegistry(InetAddress _host, int _port) {
+    public RMIRegistry(InetAddress _host, int _port) {
         host = _host;
         port = _port;
     }
 
-    RMIRegistry(String _host, int _port) throws UnknownHostException {
+    public RMIRegistry(String _host, int _port) throws UnknownHostException {
         host = InetAddress.getByName(_host);
         port = _port;
     }
 
     public RemoteObjectRef getRemoteObjectRef (String objectName) 
-                                                throws IOException
+                                 throws IOException, Remote440Exception
     {
         Socket sock = null;
 
         try {
             sock = new Socket(host, port);
         } catch (Exception e) {
-            System.err.println("getRemoteObjectRef: error creating socket");
+            throw new Remote440Exception(
+                        "getROR: error creating socket");
         }
 
         ObjectOutputStream oOs = null;
@@ -43,16 +44,19 @@ public class RMIRegistry {
         oOs = new ObjectOutputStream(sock.getOutputStream());
         oIs = new ObjectInputStream(sock.getInputStream());
         oOs.writeObject(msg);
-            
+        oOs.flush();        
+
+
         try {
             if (((RMIRegistryMessage)oIs.readObject()).getMessageType() == ISREG) {
                 System.out.println("Found a registry!");
             }
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new Remote440Exception("getROR: failed to read message(1) " +
+                                        "from host; ClassNotFoundException");
         }
 
-        
+
         oOs.writeObject(new RMIRegistryMessage(LOOKUP, objectName));
 
         RemoteObjectRef ror    = null;
@@ -63,7 +67,8 @@ public class RMIRegistry {
         } catch (ClassNotFoundException e) {
             //TODO do we need to send an ACK here?
             oOs.writeObject(new String("ACK"));
-            e.printStackTrace();
+            throw new Remote440Exception("getROR: failed to read message(2) " +
+                                         "from host; ClassNotFoundException");
         }
 
         oOs.writeObject(new String("ACK"));

@@ -12,15 +12,19 @@ public class RMIServerThread extends Thread {
     private static final char LIST     = 'm';
     private static final char TERM     = 't';
 
-
+    private ObjectInputStream oIs;
+    private ObjectOutputStream oOs;
     private Socket clientSock;
 
     private Map<String, RemoteObjectRef> nameToROR;
 
 
-    public RMIServerThread (Socket _clientSock) {
+    public RMIServerThread (Socket _clientSock, ObjectInputStream _oIs,
+                                ObjectOutputStream _oOs) {
         clientSock = _clientSock;
         nameToROR  = Collections.synchronizedMap(new HashMap());
+        oOs        = _oOs;
+        oIs        = _oIs;
     }
 
     public void registerROR(String _name, RemoteObjectRef _ror) {
@@ -38,29 +42,26 @@ public class RMIServerThread extends Thread {
      */
 
     public void run () {
-        int numTries = 3;
+
+
+        System.out.println("is it connected? " + clientSock.isConnected());
         while (clientSock.isConnected()) {
 
             //listen to the client's message, do server things
-            ObjectInputStream oIs;
-            ObjectOutputStream oOs;
-
-            try {
-                oOs = new ObjectOutputStream(clientSock.getOutputStream());
-                oIs = new ObjectInputStream(clientSock.getInputStream());
-            } catch (IOException e) {
-                System.err.println("ServerThread: error creating socket I/O streams");
-                numTries--;
-                if (numTries == 0) { 
-                    try {clientSock.close();} catch (IOException e1) {};
-                }
-                continue;
-            }
 
             RMIRegistryMessage msg;
             RMIRegistryMessage rsp;
             RemoteObjectRef ref;
-            
+ 
+            try {
+                oOs.writeObject(new RMIRegistryMessage(ISREG));
+                oOs.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
+
+            System.out.println("reading cmd");
             try {
                 msg = (RMIRegistryMessage)oIs.readObject();
             } catch (Exception e) {
@@ -68,10 +69,12 @@ public class RMIServerThread extends Thread {
                 continue;
             }
 
+            System.out.println("doing cmd");
             switch(msg.getMessageType()) {
 
                 case LOOKUP:
                     //lookup the RemoteObjectRef
+                    System.out.println("LOOKUP " + msg.getRMIObjectName());
                     if ((ref = nameToROR.get(msg.getRMIObjectName())) != null) {
                         //get the ref and pass it to client
                         rsp = new RMIRegistryMessage(FOUND, ref);
@@ -108,7 +111,6 @@ public class RMIServerThread extends Thread {
                 
             }
 
-            numTries = 3;
 
         }
                 

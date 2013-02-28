@@ -83,7 +83,7 @@ public class RMIServer {
                 RMIServerThread serveThread;
 
                 //create a thread for the guy
-                serveThread = new RMIServerThread(sock);
+                serveThread = new RMIServerThread(sock, oIs, oOs);
                 serveThread.start();
 
             }
