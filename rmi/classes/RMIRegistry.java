@@ -11,7 +11,7 @@ public class RMIRegistry {
     private static final char ISREG   = 'i';
     private static final char LOOKUP  = 'l';
     private static final char FOUND   = 'f';
-    private static final char LISTMETHODS = 'm';
+    private static final char LIST    = 'm';
 
 
     public RMIRegistry(InetAddress _host, int _port) {
@@ -24,11 +24,17 @@ public class RMIRegistry {
         port = _port;
     }
 
+    /** getRemoteObjectRef()
+     * returns the remote object ref retreived from the server
+     * using the name objectname
+     * @param objectName - the name of the remote object
+     */
     public RemoteObjectRef getRemoteObjectRef (String objectName) 
                                  throws IOException, Remote440Exception
     {
         Socket sock = null;
 
+        //create the socket
         try {
             sock = new Socket(host, port);
         } catch (Exception e) {
@@ -46,7 +52,7 @@ public class RMIRegistry {
         oOs.writeObject(msg);
         oOs.flush();        
 
-
+        //verify that it's actually an RMI registry server
         try {
             if (((RMIRegistryMessage)oIs.readObject()).getMessageType() == ISREG) {
                 System.out.println("Found a registry!");
@@ -56,12 +62,14 @@ public class RMIRegistry {
                                         "from host; ClassNotFoundException");
         }
 
-
+        //LOOKUP the object on the server
         oOs.writeObject(new RMIRegistryMessage(LOOKUP, objectName));
+        oOs.flush();
 
         RemoteObjectRef ror    = null;
         RMIRegistryMessage rsp = null;
 
+        //get the response, which should contain an objectref, from the server
         try {
             rsp = (RMIRegistryMessage)oIs.readObject();
         } catch (ClassNotFoundException e) {
@@ -71,36 +79,52 @@ public class RMIRegistry {
                                          "from host; ClassNotFoundException");
         }
 
+        //ackit
         oOs.writeObject(new String("ACK"));
 
+
+        //if it's not FOUND, it wasn't found.  get over it.  no server wants
+        //a needy client
         if (rsp.getMessageType() == FOUND) {
             ror = rsp.getRemoteObjectRef();
         } else {
-            return null;
+            throw new Remote440Exception("Object not found!");
         }
 
         return ror;
     }
 
+    /** getRegistryHostName()
+     */
     public String getRegistryHostName() {
         return host.toString();
     }
 
+    /** getRegistryInetAddress()
+     * gets the remote InetAddress of this RMI registry
+     */
     public InetAddress getRegistryInetAddress() {
         return host;
     }
 
+    /** getRemoteRegistryPort()
+     * returns the remote port of this registry
+     */
     public int getRemoteRegistryPort() {
         return port;
     }
 
+
+    /** listRemoteNames()
+     * lists the remote object names on the RMI registry
+     */
     public String[] listRemoteNames() {
         Socket sock;
         ObjectInputStream oIs;
         ObjectOutputStream oOs;
         String[] names;
 
-        
+        //connect to the server
         try {
             sock = new Socket(host, port);
         } catch (Exception e) {
@@ -108,6 +132,7 @@ public class RMIRegistry {
             return null;
         }
 
+        //create the I/O streams with the server
         try {
             oIs = new ObjectInputStream(sock.getInputStream());
             oOs = new ObjectOutputStream(sock.getOutputStream());
@@ -115,17 +140,18 @@ public class RMIRegistry {
             System.err.println("listRemoteNames: error creating I/O streams");
             return null;
         }
- 
-        RMIRegistryMessage req = new RMIRegistryMessage(LISTMETHODS);
 
+        
+        //send a request for the object name list
         try {
-            oOs.writeObject(req);
+            oOs.writeObject(new RMIRegistryMessage(LIST));
             names = (String[])oIs.readObject();
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
 
+        //ackit
         try {
             oOs.writeObject(new String("ACK"));
         } catch (Exception e) {
