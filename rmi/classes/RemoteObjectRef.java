@@ -65,9 +65,10 @@ public class RemoteObjectRef {
 		return remoteInterfaceName;
 	}
 
-	public void setRemoteInterfaceName(String remoteInterfaceName) {
-		this.remoteInterfaceName = remoteInterfaceName;
+	public void setRemoteInterfaceName(String _remoteInterfaceName) {
+		this.remoteInterfaceName = _remoteInterfaceName;
 	}
+
 
     boolean remoteEquals(RemoteObjectRef ror) {
         return (iAddr == ror.getInetAddress());

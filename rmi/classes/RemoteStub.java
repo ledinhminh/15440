@@ -36,9 +36,9 @@ public abstract class RemoteStub implements Remote440 {
 	        oOs.writeObject(msg);
 	        response = (RMIMessage)oIs.readObject();
 		} catch (IOException e) {
-			throw new Remote440Exception();
+			throw new Remote440Exception("IOException communicating with host");
 		} catch (ClassNotFoundException e) {
-			throw new Remote440Exception();
+			throw new Remote440Exception("Response class not found");
 		}
         
     	

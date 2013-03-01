@@ -15,17 +15,35 @@ public class RMIServerThread extends Thread {
     private ObjectInputStream oIs;
     private ObjectOutputStream oOs;
     private Socket clientSock;
+    private boolean invoker = false;
 
     private Map<String, RemoteObjectRef> nameToROR;
+    private Map<RemoteObjectRef, Object> RORToObject;
+
+
+    private RMIMessage doMessage;
+
+    public RMIServerThread (Socket _clientSock, ObjectInputStream _oIs,
+                            ObjectOutputStream _oOs, boolean _invoker,
+                            RMIMessage _doMessage) {
+        clientSock = _clientSock;
+        nameToROR  = Collections.synchronizedMap(new HashMap());
+        oOs        = _oOs;
+        oIs        = _oIs;
+        invoker    = _invoker;
+        doMessage  = _doMessage;
+    }
 
 
     public RMIServerThread (Socket _clientSock, ObjectInputStream _oIs,
-                                ObjectOutputStream _oOs) {
+                            ObjectOutputStream _oOs) {
         clientSock = _clientSock;
         nameToROR  = Collections.synchronizedMap(new HashMap());
         oOs        = _oOs;
         oIs        = _oIs;
     }
+
+
 
     public void registerROR(String _name, RemoteObjectRef _ror) {
         nameToROR.put(_name, _ror);
@@ -35,20 +53,55 @@ public class RMIServerThread extends Thread {
         nameToROR.remove(_name);
     }
 
-    /**
-     * run()
-     * takes the connection to the client and does server things
-     * passes back RemoteObjectReferences
+
+
+    /**giveLargeResponse()
+     * talks to a client who's tryna get us to invoke methods
      */
+    public void giveLargeResponse() {
+        RemoteObjectRef ror = doMessage.getRor();
+        
+        if (ror == null) {
+            System.err.println("No RMIMessage found...giving up");
+            return;
+        }
 
-    public void run () {
+        
+        //we've got a good object...do stuff
+        if (!doMessage.invokeOnObject(RORToObject.get(ror))) {
+            doMessage.setReturnValue(null);
+            Exception e = new Remote440Exception(
+                        "Bad RemoteObjectReference.  Couldn't" +
+                        " find object on host");
+            doMessage.setException(e, true);
+        }
+        
+        
+        try {
+            //write the object, get the ack
+            oOs.writeObject(doMessage);
+            oIs.readObject();
+        } catch (Exception e) {
+            try {
+                clientSock.close();
+            } catch (Exception e1) {
+                System.err.println("Error closing client socket");
+            }
+        }
+
+        return;
+    }
 
 
+
+    /**giveSimpleResponse()
+     * talks to a client who's just looking for new object refs
+     */
+    public void giveSmallResponse() {
         System.out.println("is it connected? " + clientSock.isConnected());
         while (clientSock.isConnected()) {
 
             //listen to the client's message, do server things
-
             RMIRegistryMessage msg;
             RMIRegistryMessage rsp;
             RemoteObjectRef ref;
@@ -113,7 +166,23 @@ public class RMIServerThread extends Thread {
 
 
         }
-                
+    }
+
+
+    /**
+     * run()
+     * takes the connection to the client and does server things
+     * passes back RemoteObjectReferences
+     */
+
+    public void run () {
+
+        if (invoker) {
+            giveLargeResponse();
+        } else {
+            giveSmallResponse();
+        }
+               
     }
 
 }

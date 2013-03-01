@@ -15,6 +15,59 @@ public class RMIServer {
     private static final char LIST    = 'm';
     private static final char TERM    = 't';
 
+
+    public static void doClientCommands(Socket sock) {
+        ObjectInputStream oIs;
+        ObjectOutputStream oOs;
+        try {
+            oOs = new ObjectOutputStream(sock.getOutputStream());
+            oIs = new ObjectInputStream(sock.getInputStream());
+        } catch (Exception e) {
+            System.err.println("error getting I/O streams from client.");
+            try {
+                sock.close();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+            return;
+        }
+
+
+        Object msg;
+
+        try {
+            msg = oIs.readObject();
+        } catch (Exception e) {
+            System.err.println("Error receiving msg");
+            try {
+                sock.close();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+            return;
+        }
+
+        if (msg.getClass().getName().equals("RMIRegistryMessage")) {
+
+            if ((((RMIRegistryMessage)msg).getMessageType()) == FINDREG) {
+                RMIServerThread serveThread;
+
+                //create a thread for the guy
+                serveThread = new RMIServerThread(sock, oIs, oOs);
+                serveThread.start();
+            }
+        }
+
+        else if (msg.getClass().getName().equals("RMIMessage")) {
+            //probably a method invokation, lets dooit
+            
+        
+        }
+
+    }
+
+
+
     public static void main (String args[]) {
 
         try {
@@ -40,8 +93,6 @@ public class RMIServer {
         while (true) {
             //listen for new RMIRegistryMessage
             Socket sock;
-            ObjectOutputStream oOs;
-            ObjectInputStream oIs;
 
             try {
                 sock = sSock.accept();
@@ -50,44 +101,8 @@ public class RMIServer {
                                     " Trying again...");
                 continue;
             }
-
-            try {
-                oOs = new ObjectOutputStream(sock.getOutputStream());
-                oIs = new ObjectInputStream(sock.getInputStream());
-            } catch (Exception e) {
-                System.err.println("error getting I/O streams from client.");
-                try {
-                    sock.close();
-                } catch (Exception e1) {
-                    e1.printStackTrace();
-                }
-                continue;
-            }
-
-
-            RMIRegistryMessage msg;
-
-            try {
-                msg = (RMIRegistryMessage)oIs.readObject();
-            } catch (Exception e) {
-                System.err.println("Error receiving msg");
-                try {
-                    sock.close();
-                } catch (Exception e1) {
-                    e1.printStackTrace();
-                }
-                continue;
-            }
-
-            if (msg.getMessageType() == FINDREG) {
-                RMIServerThread serveThread;
-
-                //create a thread for the guy
-                serveThread = new RMIServerThread(sock, oIs, oOs);
-                serveThread.start();
-
-            }
-
+            
+            doClientCommands(sock);
         }
 
     }

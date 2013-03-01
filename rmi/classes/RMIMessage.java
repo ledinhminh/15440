@@ -44,7 +44,7 @@ public class RMIMessage implements Serializable  {
 				//maybe should be doing something?
                 
 			}
-			
+	
 			argTypes[i] = argClass;
 		}
 	}
@@ -72,11 +72,19 @@ public class RMIMessage implements Serializable  {
 	public boolean exceptionWasThrown() {
 		return exceptionWasThrown;
 	}
+
+
 	
 	public Exception getException() {
 		return exception;
 	}
-	public RemoteObjectRef getRor() {
+
+    public void setException(Exception e, boolean _exceptionWasThrown) {
+        exception = e;
+        exceptionWasThrown = _exceptionWasThrown;
+    }
+
+    public RemoteObjectRef getRor() {
 		return ror;
 	}
 
@@ -129,5 +137,5 @@ public class RMIMessage implements Serializable  {
 		
 		return true;
 	}
-	
+
 }
