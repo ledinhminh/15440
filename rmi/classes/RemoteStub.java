@@ -13,7 +13,7 @@ public abstract class RemoteStub implements Remote440 {
         return ror;
     }
     
-    private Object executeMessage(RMIMessage msg) throws Remote440Exception, Exception {
+    protected Object executeMessage(RMIMessage msg) throws Remote440Exception, Exception {
     	Socket sock = null;
     	//make sure that the reference is attached to the message
     	if (msg.getRor() == null) 
