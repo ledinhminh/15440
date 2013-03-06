@@ -24,13 +24,12 @@ public class RMIServerThread extends Thread {
     private RMIMessage doMessage;
 
     public RMIServerThread (Socket _clientSock, ObjectInputStream _oIs,
-                            ObjectOutputStream _oOs, boolean _invoker,
-                            RMIMessage _doMessage) {
+                            ObjectOutputStream _oOs, RMIMessage _doMessage) {
         clientSock = _clientSock;
         nameToROR  = Collections.synchronizedMap(new HashMap());
         oOs        = _oOs;
         oIs        = _oIs;
-        invoker    = _invoker;
+        invoker    = true;
         doMessage  = _doMessage;
     }
 

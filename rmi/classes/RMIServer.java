@@ -14,7 +14,8 @@ public class RMIServer {
     private static final char FOUND   = 'f';
     private static final char LIST    = 'm';
     private static final char TERM    = 't';
-
+    private static Map<String, RemoteObjectRef> nameToROR;
+    private static Map<RemoteObjectRef, Object> nameToObject;
 
     public static void doClientCommands(Socket sock) {
         ObjectInputStream oIs;
@@ -53,15 +54,16 @@ public class RMIServer {
                 RMIServerThread serveThread;
 
                 //create a thread for the guy
-                serveThread = new RMIServerThread(sock, oIs, oOs);
+                serveThread = new RMIServerThread(sock, oIs, oOs, nameToROR);
                 serveThread.start();
             }
         }
 
         else if (msg.getClass().getName().equals("RMIMessage")) {
             //probably a method invokation, lets dooit
-            
-        
+            RMIServerThread serveThread;
+            serveThread = new RMIServerThread(sock, oIs, oOs, (RMIMessage)msg);
+            serveThread.start();
         }
 
     }
