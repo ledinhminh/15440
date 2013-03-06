@@ -1,7 +1,7 @@
 import java.lang.*;
 import java.io.*;
 import java.net.*;
-
+import java.util.*;
 
 public class RMIServer {
     private static InetAddress localHost;
@@ -14,8 +14,10 @@ public class RMIServer {
     private static final char FOUND   = 'f';
     private static final char LIST    = 'm';
     private static final char TERM    = 't';
-    private static Map<String, RemoteObjectRef> nameToROR;
-    private static Map<RemoteObjectRef, Object> nameToObject;
+    private static Map<String, Integer> nameToKey
+                   = Collections.synchronizedMap(new HashMap<String, Integer>());
+    private static Map<Integer, Object> keyToObject
+                   = Collections.synchronizedMap(new HashMap<Integer, Object>());
 
     public static void doClientCommands(Socket sock) {
         ObjectInputStream oIs;
@@ -54,7 +56,7 @@ public class RMIServer {
                 RMIServerThread serveThread;
 
                 //create a thread for the guy
-                serveThread = new RMIServerThread(sock, oIs, oOs, nameToROR);
+                serveThread = new RMIServerThread(sock, listenPort, oIs, oOs, nameToKey, keyToObject);
                 serveThread.start();
             }
         }
@@ -62,7 +64,8 @@ public class RMIServer {
         else if (msg.getClass().getName().equals("RMIMessage")) {
             //probably a method invokation, lets dooit
             RMIServerThread serveThread;
-            serveThread = new RMIServerThread(sock, oIs, oOs, (RMIMessage)msg);
+            serveThread = new RMIServerThread(sock, listenPort, oIs, oOs, (RMIMessage)msg,
+                                              nameToKey, keyToObject);
             serveThread.start();
         }
 
@@ -91,6 +94,13 @@ public class RMIServer {
             System.err.println("Error creating the server socket! :) :) :)");
             return;
         }
+
+
+        nameToKey.put("TestRemoteObject", new Integer(123));
+        keyToObject.put(new Integer(123), new TestRemoteObject());
+        
+        nameToKey.put("KevinBravo", new Integer(124));
+        keyToObject.put(new Integer(124), new TestRemoteObject());
 
         while (true) {
             //listen for new RMIRegistryMessage

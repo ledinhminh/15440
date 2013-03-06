@@ -16,42 +16,54 @@ public class RMIServerThread extends Thread {
     private ObjectOutputStream oOs;
     private Socket clientSock;
     private boolean invoker = false;
+    private int port;
 
-    private Map<String, RemoteObjectRef> nameToROR;
-    private Map<RemoteObjectRef, Object> RORToObject;
+
+    private Map<String, Integer> nameToKey;
+    private Map<Integer, Object> keyToObject;
+
 
 
     private RMIMessage doMessage;
 
-    public RMIServerThread (Socket _clientSock, ObjectInputStream _oIs,
-                            ObjectOutputStream _oOs, RMIMessage _doMessage) {
-        clientSock = _clientSock;
-        nameToROR  = Collections.synchronizedMap(new HashMap());
-        oOs        = _oOs;
-        oIs        = _oIs;
-        invoker    = true;
-        doMessage  = _doMessage;
+    public RMIServerThread (Socket _clientSock, int _localPort, ObjectInputStream _oIs,
+                            ObjectOutputStream _oOs, RMIMessage _doMessage,
+                            Map<String, Integer> _nameToKey,
+                            Map<Integer, Object> _keyToObject) {
+        //_keyToObject should be a synchronizedMap
+        clientSock  = _clientSock;
+        keyToObject = _keyToObject;
+        nameToKey   = _nameToKey;
+        oOs         = _oOs;
+        oIs         = _oIs;
+        invoker     = true;
+        doMessage   = _doMessage;
+        port        = _localPort;
     }
 
 
-    public RMIServerThread (Socket _clientSock, ObjectInputStream _oIs,
-                            ObjectOutputStream _oOs) {
-        clientSock = _clientSock;
-        nameToROR  = Collections.synchronizedMap(new HashMap());
-        oOs        = _oOs;
-        oIs        = _oIs;
+    public RMIServerThread (Socket _clientSock, int _localPort, ObjectInputStream _oIs,
+                            ObjectOutputStream _oOs,
+                            Map<String, Integer> _nameToKey, Map<Integer, Object> _keyToObject) {
+        clientSock  = _clientSock;
+        nameToKey   = _nameToKey;
+        keyToObject = _keyToObject;
+        oOs         = _oOs;
+        oIs         = _oIs;
+        port        = _localPort;
     }
 
 
 
-    public void registerROR(String _name, RemoteObjectRef _ror) {
-        nameToROR.put(_name, _ror);
+/*    public void registerROR(String _name, RemoteObjectRef _ror) {
+        nameToKey.put(_name, _ror);
     }
+*/
 
-    public void removeROR(String _name) {
-        nameToROR.remove(_name);
+/*    public void removeROR(String _name) {
+        nameToKey.remove(_name);
     }
-
+*/
 
 
     /**giveLargeResponse()
@@ -60,6 +72,16 @@ public class RMIServerThread extends Thread {
     public void giveLargeResponse() {
         RemoteObjectRef ror = doMessage.getRor();
         
+        Object[] args = doMessage.getArgs();
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof RemoteObjectRef) {
+                args[i] = keyToObject.get(((RemoteObjectRef)args[i]).getObjKey());
+            }
+        }
+        
+        doMessage.setArgs(args);
+
         if (ror == null) {
             System.err.println("No RMIMessage found...giving up");
             return;
@@ -67,7 +89,7 @@ public class RMIServerThread extends Thread {
 
         
         //we've got a good object...do stuff
-        if (!doMessage.invokeOnObject(RORToObject.get(ror))) {
+        if (!doMessage.invokeOnObject(keyToObject.get(ror.getObjKey()))) {
             doMessage.setReturnValue(null);
             Exception e = new Remote440Exception(
                         "Bad RemoteObjectReference.  Couldn't" +
@@ -77,8 +99,10 @@ public class RMIServerThread extends Thread {
         
         
         try {
+            doMessage.setArgs(new Object[0]);
             //write the object, get the ack
             oOs.writeObject(doMessage);
+            oOs.flush();
             oIs.readObject();
         } catch (Exception e) {
             try {
@@ -86,6 +110,7 @@ public class RMIServerThread extends Thread {
             } catch (Exception e1) {
                 System.err.println("Error closing client socket");
             }
+            return;
         }
 
         return;
@@ -97,8 +122,8 @@ public class RMIServerThread extends Thread {
      * talks to a client who's just looking for new object refs
      */
     public void giveSmallResponse() {
-        System.out.println("is it connected? " + clientSock.isConnected());
-        while (clientSock.isConnected()) {
+
+        if (clientSock.isConnected()) {
 
             //listen to the client's message, do server things
             RMIRegistryMessage msg;
@@ -109,27 +134,37 @@ public class RMIServerThread extends Thread {
                 oOs.writeObject(new RMIRegistryMessage(ISREG));
                 oOs.flush();
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println("giveSmallRsp()...failed writing an object");
                 return;
             }
 
-            System.out.println("reading cmd");
             try {
                 msg = (RMIRegistryMessage)oIs.readObject();
             } catch (Exception e) {
                 System.err.println("ServerThread: Error reading message!");
-                continue;
+                return;
             }
 
-            System.out.println("doing cmd");
             switch(msg.getMessageType()) {
 
                 case LOOKUP:
                     //lookup the RemoteObjectRef
-                    System.out.println("LOOKUP " + msg.getRMIObjectName());
-                    if ((ref = nameToROR.get(msg.getRMIObjectName())) != null) {
+                    Integer key;
+                    if ((key = nameToKey.get(msg.getRMIObjectName())) != null) {
                         //get the ref and pass it to client
-                        rsp = new RMIRegistryMessage(FOUND, ref);
+                        try {
+                            InetAddress iaddr = InetAddress.getLocalHost();
+                            if (keyToObject == null) System.err.println("fx");
+                            Object obj = keyToObject.get(key);
+                            RemoteObjectRef rspRef = new RemoteObjectRef(
+                                        iaddr, port, key, obj.getClass().getName());
+                            rsp = new RMIRegistryMessage(FOUND, rspRef);
+                        } catch (Exception e) {
+                            //send a 440Exception?
+                            e.printStackTrace();
+                            rsp = new RMIRegistryMessage(NOTFOUND);
+                        }
+
                     } else {
                         rsp = new RMIRegistryMessage(NOTFOUND);
                     }
@@ -145,9 +180,9 @@ public class RMIServerThread extends Thread {
                     break;
                     
                 case LIST:
-                    //create a list of names (keys in nameToROR)
+                    //create a list of names (keys in nameToKey)
                     try {
-                        String[] names = (String[])nameToROR.keySet().toArray();
+                        String[] names = (String[])nameToKey.keySet().toArray();
                         oOs.writeObject(names);
                         //ACK
                         oIs.readObject();

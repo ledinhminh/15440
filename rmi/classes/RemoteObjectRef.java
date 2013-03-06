@@ -1,17 +1,19 @@
 import java.net.InetAddress;
+import java.io.*;
 
-public class RemoteObjectRef {
-    InetAddress iAddr;
-	int port;
-    int objKey;
-    String remoteInterfaceName;
+
+public class RemoteObjectRef implements Serializable {
+    private InetAddress iAddr;
+	private int port;
+    private Integer objKey;
+    private String remoteInterfaceName;
 
 
 
     public RemoteObjectRef(InetAddress _iAddr, int _port, int _objKey, String iname) {
         iAddr  = _iAddr;
         port   = _port;
-        objKey = _objKey;
+        objKey = new Integer(_objKey);
         remoteInterfaceName = iname;
     }
 
@@ -53,7 +55,7 @@ public class RemoteObjectRef {
     public int getPort() {
     	return port;
     }
-    public int getObjKey() {
+    public Integer getObjKey() {
 		return objKey;
 	}
 

@@ -55,7 +55,7 @@ public class RMIRegistry {
         //verify that it's actually an RMI registry server
         try {
             if (((RMIRegistryMessage)oIs.readObject()).getMessageType() == ISREG) {
-                System.out.println("Found a registry!");
+                //System.out.println("Found a registry!");
             }
         } catch (ClassNotFoundException e) {
             throw new Remote440Exception("getROR: failed to read message(1) " +
@@ -91,6 +91,11 @@ public class RMIRegistry {
             throw new Remote440Exception("Object not found!");
         }
 
+        try {
+            sock.close();
+        } catch (Exception e) {
+            System.err.println("RMIReg.getROR: Failed closing a socket");
+        }
         return ror;
     }
 

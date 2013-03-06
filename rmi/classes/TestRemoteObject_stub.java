@@ -9,7 +9,25 @@ public class TestRemoteObject_stub extends RemoteStub {
 		obj = o;
 	}
 	
-	
+
+    public void incrementErp(TestRemoteObject_stub kb) 
+                    throws Remote440Exception, Exception{
+        RMIMessage m = new RMIMessage("incrementErp", new Object[] {kb.getRemoteRef()});
+
+        executeMessage(m);
+    }
+
+        
+    public Integer getErp(TestRemoteObject_stub kb) 
+                        throws Remote440Exception, Exception {
+        RMIMessage m = new RMIMessage("getErp", new Object[] {kb.getRemoteRef()});
+
+        return (Integer)executeMessage(m);
+    }
+
+
+
+
 	public String getS() throws Remote440Exception, Exception {
 		RMIMessage m = new RMIMessage("getS", new Object[0]);
 		
@@ -39,32 +57,5 @@ public class TestRemoteObject_stub extends RemoteStub {
 		
 		executeMessage(m);
 	}
-	
-	public static void main(String[] args) {
-		TestRemoteObject_stub stub = new TestRemoteObject_stub();
-		stub.setRemoteObject(new TestRemoteObject());
-		
-		try {
-			stub.setS("a");
-			System.out.println(stub.getS());
-			System.out.println(stub.concatS("b"));
-			System.out.println(stub.concat2("b", "c"));
-			try {
-				stub.throwException();
-			} catch (IndexOutOfBoundsException e){
-				System.out.println("properly thrown");
-			}
-			
-		} catch (Remote440Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-	}
-	
 
 }
