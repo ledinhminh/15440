@@ -1,7 +1,18 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.io.*;
-import java.lang.*;
 import java.net.Socket;
 
+/**
+ * 
+ * The abstract class that all stubs for remote objects inherit from.
+ * Contains the logic to send a message to the server and receive 
+ * a response. Also throws exceptions if need be.
+ *
+ */
 public abstract class RemoteStub implements Remote440 {
     private RemoteObjectRef ror;
 

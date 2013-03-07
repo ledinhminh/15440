@@ -1,8 +1,18 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.io.*;
 import java.net.*;
 import java.lang.*;
 import java.util.*;
 
+/**
+ * 
+ * RMIServerThread: does the guts of the RMI call handling.
+ *
+ */
 public class RMIServerThread extends Thread {
     private static final char FINDREG  = 'r';
     private static final char ISREG    = 'i';
@@ -52,18 +62,6 @@ public class RMIServerThread extends Thread {
         oIs         = _oIs;
         port        = _localPort;
     }
-
-
-
-/*    public void registerROR(String _name, RemoteObjectRef _ror) {
-        nameToKey.put(_name, _ror);
-    }
-*/
-
-/*    public void removeROR(String _name) {
-        nameToKey.remove(_name);
-    }
-*/
 
 
     /**giveLargeResponse()
@@ -202,13 +200,11 @@ public class RMIServerThread extends Thread {
         }
     }
 
-
     /**
      * run()
      * takes the connection to the client and does server things
      * passes back RemoteObjectReferences
      */
-
     public void run () {
 
         if (invoker) {

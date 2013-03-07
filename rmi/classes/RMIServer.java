@@ -1,8 +1,19 @@
-import java.lang.*;
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * 
+ * RMIServer: The rmi server class. Takes in one argument, the port number
+ * to listen on. Then listens on that port for incoming messages and dispatches
+ * them to worker threads accordingly.
+ *
+ */
 public class RMIServer {
     private static InetAddress localHost;
     private static int listenPort = 15440;
@@ -96,6 +107,7 @@ public class RMIServer {
         }
 
 
+        //Add two test objects to play with
         nameToKey.put("TestRemoteObject", new Integer(123));
         keyToObject.put(new Integer(123), new TestRemoteObject());
         

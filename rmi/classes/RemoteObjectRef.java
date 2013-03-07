@@ -1,9 +1,24 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.net.InetAddress;
 import java.io.*;
 
 
+/**
+ * 
+ * RemoteObjectRef: A reference to a remote object. To get a usable
+ * stub for this object call localise().
+ *
+ */
 public class RemoteObjectRef implements Serializable {
-    private InetAddress iAddr;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -5481496144259982534L;
+	private InetAddress iAddr;
 	private int port;
     private Integer objKey;
     private String remoteInterfaceName;

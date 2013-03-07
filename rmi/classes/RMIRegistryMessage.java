@@ -1,7 +1,17 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.io.*;
 import java.lang.*;
 import java.net.*;
 
+/**
+ * 
+ * RMIRegistryMessage: Describes a message looking up a remote object by name
+ *
+ */
 public class RMIRegistryMessage implements Serializable {
     private char msgType;
     private String objectName;

@@ -1,9 +1,19 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
-
+/**
+ * 
+ * RMIMessage: an object that describes a function call to
+ * a remote object. Contains both the ROR and all of the marshalled
+ * arguments.
+ *
+ */
 public class RMIMessage implements Serializable  {
 	/**
 	 * 
@@ -36,16 +46,7 @@ public class RMIMessage implements Serializable  {
 		
 		argTypes = new Class<?>[args.length];
 		for (int i = 0; i < args.length; i++) {
-			Class argClass = args[i].getClass();
-			
-			Class[] interfaces = argClass.getInterfaces();
-			if (Arrays.asList(interfaces).contains(Remote440.class)) {
-				//it is a remote object stub
-				//maybe should be doing something?
-                
-			}
-	
-			argTypes[i] = argClass;
+			argTypes[i] = args[i].getClass();
 		}
 	}
 
