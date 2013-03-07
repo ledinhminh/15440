@@ -1,7 +1,14 @@
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 
-
+/**
+ * 
+ * TestRemoteObject_stub: A handmade stub for TestRemoteObject
+ *
+ */
 public class TestRemoteObject_stub extends RemoteStub {
 	TestRemoteObject obj;
 	
@@ -12,6 +19,7 @@ public class TestRemoteObject_stub extends RemoteStub {
 
     public void incrementErp(TestRemoteObject_stub kb) 
                     throws Remote440Exception, Exception{
+    	//If a remote stub is passed in, send the ROR to the server so that it can dereference it there
         RMIMessage m = new RMIMessage("incrementErp", new Object[] {kb.getRemoteRef()});
 
         executeMessage(m);
@@ -20,7 +28,8 @@ public class TestRemoteObject_stub extends RemoteStub {
         
     public Integer getErp(TestRemoteObject_stub kb) 
                         throws Remote440Exception, Exception {
-        RMIMessage m = new RMIMessage("getErp", new Object[] {kb.getRemoteRef()});
+    	//If a remote stub is passed in, send the ROR to the server so that it can dereference it there
+    	RMIMessage m = new RMIMessage("getErp", new Object[] {kb.getRemoteRef()});
 
         return (Integer)executeMessage(m);
     }

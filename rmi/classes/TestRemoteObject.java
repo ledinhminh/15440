@@ -1,4 +1,14 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 
+/**
+ * 
+ * TestRemoteObject: a simple little object to play around with testing the RMI.
+ *
+ */
 public class TestRemoteObject {
 
     public int erp = 0;

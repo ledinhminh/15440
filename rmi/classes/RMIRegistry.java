@@ -1,8 +1,18 @@
+/**
+ * Kevin Bravo and Nick Zukoski
+ * 15440 Project 2
+ * 
+ */
 import java.io.*;
 import java.lang.*;
 import java.net.*;
 
-
+/**
+ * 
+ * RMIRegistry: Holds all of the logic for talking to the RMI Registry
+ * server and returning remoteObjectReferences.
+ *
+ */
 public class RMIRegistry {
     InetAddress host;
     int port;
