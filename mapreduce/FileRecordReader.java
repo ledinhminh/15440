@@ -38,7 +38,10 @@ public class FileRecordReader implements Serializable {
   }
 
 
-
+  /** Use this for output files, or semi-output files.
+   * Example: wat if map results are variable length?
+   * Use it.
+   */
   public FileRecordReader (String fname, int _partitionIndex) {
     isInput        = true;
     try {
@@ -54,7 +57,8 @@ public class FileRecordReader implements Serializable {
 
   /** getKeyValuePair
    * @param recordNum
-   * Runs through file and retrieves the recordNum'th record
+   * Runs through a partition and returns an array of all K-V pairs in that
+   * partition
    */
   public String[][] getKeyValuePairs (int partitionIndex, int partitionSize) {
     String[] res = new String[2];
