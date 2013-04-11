@@ -5,4 +5,7 @@ public class Configuration {
 	
 	//The port that network communication takes place on
 	public static final int COM_PORT = 15443;
+	
+	//How long to wait on sockets before timing out (in ms)
+	public static final int SOCKET_TIMEOUT = 200;
 }
