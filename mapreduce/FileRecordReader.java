@@ -18,8 +18,6 @@ public class FileRecordReader implements Serializable {
   private int valueSize;
   private int partitionIndex;
 
-  private static final int LENGTHSIZE = 20;
-
 
   /** Use this for input files.
    * They are all constant length, just cause.
@@ -51,8 +49,6 @@ public class FileRecordReader implements Serializable {
     }
     partitionIndex = _partitionIndex;
   }
-
-
 
 
   /** getKeyValuePair
@@ -95,13 +91,13 @@ public class FileRecordReader implements Serializable {
       //get the key length
       int offset = partitionIndex;
       int idx;
-      byte[] b   = new byte[LENGTHSIZE];
+      byte[] b   = new byte[Configuration.RECORD_SIZE];
 
       for (int recordNum = 0; recordNum < partitionSize; recordNum++) {
         
         try {
-          file.read(b, offset, LENGTHSIZE);
-          offset += LENGTHSIZE + 1;
+          file.read(b, offset, Configuration.RECORD_SIZE);
+          offset += Configuration.RECORD_SIZE;
         } catch (IOException e) {
           System.err.println("getKeyValuePair: error reading file (2)");
           return null;
