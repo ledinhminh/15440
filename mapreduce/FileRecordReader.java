@@ -18,7 +18,7 @@ public class FileRecordReader implements Serializable {
   private int valueSize;
   private int partitionIndex;
 
-  private static final int LENGTHSIZE = 10;
+  private static final int LENGTHSIZE = 20;
 
 
   /** Use this for input files.
