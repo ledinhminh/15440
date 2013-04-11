@@ -47,6 +47,7 @@ public class MasterController {
 					job.setInputFiles(inputFiles);
 					
 					coord.newJob(job);
+					System.out.println(jobName + " started!");
 					continue;
 				}
 				

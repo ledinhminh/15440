@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -8,7 +9,7 @@ import java.util.List;
  * MapReduceJob is the interface that mapreduce jobs must conform to
  * to be able to be run by our MapReduce Framework
  */
-public interface MapReduceJob {
+public interface MapReduceJob extends Serializable {
 	public void setInputFiles(List<String> inputFiles);
 	public void setOutputFile(String outputFile);
 	public List<String> getInputFiles();

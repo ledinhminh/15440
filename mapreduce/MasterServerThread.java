@@ -1,8 +1,6 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
-
 
 /**
  * 
@@ -52,6 +50,7 @@ public class MasterServerThread extends Thread {
 				System.err.println("Exception waiting for client connection " + e.getMessage());
 				continue;
 			}
+			
 			
 			
 		}

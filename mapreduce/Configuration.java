@@ -8,4 +8,7 @@ public class Configuration {
 	
 	//How long to wait on sockets before timing out (in ms)
 	public static final int SOCKET_TIMEOUT = 200;
+	
+	//The number of records to allocate to a single map
+	public static final int RECORDS_PER_MAP = 50;
 }
