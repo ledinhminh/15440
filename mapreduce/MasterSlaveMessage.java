@@ -9,6 +9,7 @@ public class MasterSlaveMessage implements Serializable {
   private static final char STATUS_REQ = '?';
   private static final char STATUS_RSP = '!';
   private static final char COMMAND    = 'c';
+  private static final char ACK        = 'a';
   private static final char MAP        = 'm';
   private static final char REDUCE     = 'r';
 
@@ -21,7 +22,7 @@ public class MasterSlaveMessage implements Serializable {
 
   //partitions for input data
   private FilePartition currentPartition;
-  private LinkedList<FilePartition> partitions = new LinkedList();
+  private LinkedList<FilePartition> partitions = new LinkedList<FilePartition>();
 
 
   private RandomAccessFile outFile;
@@ -111,6 +112,12 @@ public class MasterSlaveMessage implements Serializable {
     return (currentPartition = partitions.remove());
   }
 
+  public FilePartition currentPartition() {
+    return currentPartition;
+  }
 
+  public void setStatus (char _status) {
+    status = _status;
+  }
 
 }
