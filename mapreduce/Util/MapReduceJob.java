@@ -1,3 +1,4 @@
+package Util;
 import java.io.Serializable;
 import java.util.List;
 
@@ -14,6 +15,8 @@ public interface MapReduceJob extends Serializable {
 	public void setOutputFile(String outputFile);
 	public List<String> getInputFiles();
 	public String getOutputFile();
+	
+	public int getRecordSize();
 	
 	public String getReduceIdentity();
 	

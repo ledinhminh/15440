@@ -1,3 +1,4 @@
+package Util;
 import java.io.Serializable;
 
 /**
@@ -7,6 +8,11 @@ import java.io.Serializable;
  * MapTask holds all the info needed to execute a map task
  */
 public class MapTask implements Serializable, Task{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8305200298461581217L;
+	
 	private int taskId;
 	private int jobId;
 	private FilePartition partition;

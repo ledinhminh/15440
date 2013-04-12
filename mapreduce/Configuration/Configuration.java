@@ -1,3 +1,4 @@
+package Configuration;
 
 public class Configuration {
 	//The size of an individual record (in bytes)
