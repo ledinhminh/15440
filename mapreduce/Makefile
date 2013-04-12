@@ -5,12 +5,25 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
-	FilePartition.java \
-	MasterSlaveMessage.java \
-	FileRecordReader.java \
-    SlaveHost.java \
-	SlaveConnection.java \
-
+	Configuration/Configuration.java \
+	Examples/WordCount.java \
+	Master/MasterCoordinator.java \
+	Master/MasterCommThread.java \
+	Master/MastrController.java \
+	Master/MasterDispatchThread.java \
+	Master/MasterServerThread.java \
+	Slave/SlaveCommThread.java \
+	Slave/SlaveController.java \ 
+	Slave/SlaveCoordinator.java \
+	Slave/SlaveServerThread.java \
+	Util/FilePartition.java \
+	Util/FileRecordReader.java \
+	Util/FileRecordWriter.java \
+	Util/MapReduceJob.java \
+	Util/NetworkMessage.java \
+	Util/ReduceTask.java \
+	Util/Task.java \
+	
 default: classes
 
 classes: $(CLASSES:.java=.class)

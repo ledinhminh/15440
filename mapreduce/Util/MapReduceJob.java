@@ -27,7 +27,7 @@ public interface MapReduceJob extends Serializable {
 	 * @param val The input value
 	 * @return An array of [Key,Value]
 	 */
-	public String[] map(String key, String val);
+	public List<String[]> map(String key, String val);
 	
 	/**
 	 * 

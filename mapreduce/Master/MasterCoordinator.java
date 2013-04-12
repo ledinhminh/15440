@@ -1,5 +1,12 @@
 package Master;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -21,13 +28,13 @@ public class MasterCoordinator {
 	private int curJobId = 0;
 
 	private Map<Integer, MapReduceJob> idToJob = new HashMap<Integer, MapReduceJob>();
-	
+
 	//Maps from jobID to a list of the maps for that job
 	private Map<Integer, List<Task>> jobTasks = new HashMap<Integer, List<Task>>();
 
 	//Maps from jobID to the jobs status (Mapping, Reducing, Finished)
 	private Map<Integer, String> jobStatuses = new HashMap<Integer, String>();
-	
+
 	private Map<Integer, List<String>> filesToProcess = new HashMap<Integer,List<String>>();
 
 	//Maps from slaveID to slave address
@@ -37,7 +44,7 @@ public class MasterCoordinator {
 	private Map<Integer, List<Task>> slaveTasks = new HashMap<Integer, List<Task>>();
 
 	private List<Task> queuedTasks = new LinkedList<Task>();
-	
+
 	//List of unresponsive slaves
 	private List<Integer> unresponsiveSlaves = new LinkedList<Integer>();
 
@@ -75,7 +82,7 @@ public class MasterCoordinator {
 						totalRecords - i : Configuration.RECORDS_PER_MAP;
 
 				FilePartition fp = new FilePartition(fName, i, numRecords);
-				MapTask m = new MapTask(taskId++, jId, fp, j, "temp/job_"+jId+"_maptask_"+taskId);
+				MapTask m = new MapTask(taskId++, jId, fp, j, "temp/job_"+jId+"_task_"+taskId);
 				mTasks.add(m);
 			}
 		}
@@ -100,41 +107,122 @@ public class MasterCoordinator {
 		//attempt to distribute tasks to the slaves
 		distributeTasks();
 	}
-	
+
 	/**
 	 * This is called when a job has a round of tasks finished and the next
 	 * round needs to be queued up.
 	 * @param jId The id of the job
 	 */
-	private void tasksCompleted(int jId) {
+	private void taskRoundCompleted(int jId) {
 		List<String> newInputFiles;
 		synchronized(filesToProcess) {
 			newInputFiles = filesToProcess.get(jId);
 		}
 		
+
 		MapReduceJob j = null;
 		synchronized(idToJob) {
-			idToJob.get(jId);
+			j = idToJob.get(jId);
+		}
+
+		String status;
+		synchronized(jobStatuses) {
+			status = jobStatuses.get(jId);
+		}
+		if (newInputFiles.size() == 1 &&  status.endsWith("Reducing")) {
+			//move the final reduced file to the desired output file
+			copyFileToOutput(newInputFiles.get(0), j.getOutputFile());
+			//clean up the temporary files
+			cleanupTempFiles(jId);
+			synchronized(jobStatuses) {
+				jobStatuses.put(jId, "Done");
+			}
 		}
 		
 		//Need to create a series of reduce tasks to send out.
-		
+		int curTaskId;
+		synchronized(jobTasks) {
+			curTaskId = jobTasks.get(jId).size();
+		}
+
 		List<ReduceTask> newTasks = new LinkedList<ReduceTask>();
 		List<String> curTaskFiles = new LinkedList<String>();
 		int currentSize = 0;
 		for (String s : newInputFiles) {
 			FileRecordReader r = new FileRecordReader(s, j.getRecordSize());
 			curTaskFiles.add(s);
-			
+
 			currentSize += r.numberOfRecords();
+
 			if (currentSize >= Configuration.RECORDS_PER_REDUCE) {
-				//TODO create a new ReduceTask and add it to the list
-				//ReduceTask t = new ReduceTask()
+				String outF = "temp/job_"+jId+"_task_"+curTaskId++;
+				ReduceTask t = new ReduceTask(curTaskId, jId, curTaskFiles, j, outF);
+				newTasks.add(t);
+				currentSize = 0;
+				curTaskFiles = new LinkedList<String>();
+			}
+		}
+
+		synchronized(jobTasks) {
+			jobTasks.get(jId).addAll(newTasks);
+		}
+		synchronized(queuedTasks) {
+			queuedTasks.addAll(newTasks);
+		}
+		synchronized(filesToProcess) {
+			filesToProcess.put(jId, new LinkedList<String>());
+		}
+
+	}
+
+	private void cleanupTempFiles(int jId) {
+		int numTasks;
+		synchronized(jobTasks) {
+			numTasks = jobTasks.get(jId).size();	
+		}
+		
+		for (int i = 0; i < numTasks; i++) {
+			File f = new File("temp/job_"+jId+"_task_"+i);
+			if (!f.delete()) {
+				System.err.println("Could not delete temp file: " + "temp/job_"+jId+"_task_"+i);
+			}
+		}
+	}
+
+	private void copyFileToOutput(String inputFile, String outputFile) {
+		InputStream in = null;
+		OutputStream out = null;
+		try {
+			in = new FileInputStream(inputFile);
+			out = new FileOutputStream(outputFile);
+			
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+			   out.write(buf, 0, len);
+			}
+		} catch (FileNotFoundException e) {
+			System.err.println("Error finding reduce output file");
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Error copying reduce output to named output");
+			e.printStackTrace();
+		} finally {
+			try {
+				in.close();
+				out.close();
+			} catch (IOException e) {
+				System.err.println("Error closing files when copying from reduce output to final output");
+				e.printStackTrace();
 			}
 		}
 		
 	}
 
+	/**
+	 * Called to attempt to distribute tasks in the queuedTasks queue to
+	 * slave nodes to be processed.
+	 */
 	public void distributeTasks() {
 		synchronized (queuedTasks) {
 			Iterator<Task> itr = queuedTasks.iterator();
@@ -146,12 +234,14 @@ public class MasterCoordinator {
 					for (int i : slaveTasks.keySet()) {
 						if (unresponsiveSlaves.contains(i))
 							continue; //If the slave is unresponsive then just keep going
+						
 						int numTasks = slaveTasks.get(i).size();
 						if (numTasks >= Configuration.MAX_TASKS_PER_NODE) continue;
 						if (numTasks == 0) {
 							bestHost = i;
 							break;
 						}
+						
 						if (bestHost == -1 
 								|| numTasks < slaveTasks.get(bestHost).size()) 
 							bestHost = i;
@@ -170,6 +260,11 @@ public class MasterCoordinator {
 		}
 	}
 
+	/**
+	 * Called when a notification from a slave that a task
+	 * has finished running comes in
+	 * @param t The task that has finished
+	 */
 	public void taskFinished(Task t) {
 		synchronized(unresponsiveSlaves) {
 			if (unresponsiveSlaves.contains(t.getSlaveId())) {
@@ -179,22 +274,22 @@ public class MasterCoordinator {
 				return;
 			}
 		}
-		
+
 		int jId = t.getJobId();
-		
+
 		//add the output to the files that need to be processed.
 		synchronized(filesToProcess) {
 			filesToProcess.get(jId).add(t.getOutputFile());
 		}
-		
+
 		List<Task> siblingTasks;
 		boolean allSiblingsDone = true;
-		
+
 		synchronized (jobTasks) {
 			siblingTasks = jobTasks.get(jId);
 		}
-		
-		
+
+
 		for (Task jt : siblingTasks) {
 			if (jt.getTaskId() == t.getTaskId())
 				jt.setStatus(MapTask.DONE);
@@ -202,20 +297,17 @@ public class MasterCoordinator {
 				allSiblingsDone = false;
 			}
 		}
-		
+
 		if (allSiblingsDone) {
+			taskRoundCompleted(jId);
+			
 			if (jobStatuses.get(jId).equals("Mapping")) {
 				jobStatuses.put(jId, "Reducing");
 			}
+
 			
-			tasksCompleted(jId);
 		}
-		//TODO Figure out if this is the last task to complete in the job so that the next
-		//		round of tasks can go.
-		//		Perhaps put in Maps from job ID to files that need to be reduced and update
-		//		and check that each time a task is finished. then when no more files
-		//		to be reduced you are done.
-		
+
 		synchronized (slaveTasks) {
 			List<Task> tasks = slaveTasks.get(t.getSlaveId());
 			Iterator<Task> itr = tasks.iterator();
@@ -235,11 +327,17 @@ public class MasterCoordinator {
 		if (queuedTasks.size() > 0) distributeTasks();
 	}
 
+	/**
+	 * Sends a task to a slave to be executed.
+	 * 
+	 * @param t The task to send
+	 * @param slaveId The slave to send it to
+	 */
 	private void dispatchTaskToSlave(Task t, int slaveId) {
 		t.setStatus(MapTask.RUNNING);
 		boolean isMap = t instanceof MapTask ? true : false;
 		MasterDispatchThread dispatchThread = new MasterDispatchThread(t, slaveId,slaveIdToAddr.get(slaveId), 
-													this, isMap);
+				this, isMap);
 		dispatchThread.start();
 	}
 
@@ -254,7 +352,7 @@ public class MasterCoordinator {
 		synchronized(unresponsiveSlaves) {
 			unresponsiveSlaves.add(slaveId);
 		}
-		
+
 		List<Task> deadTasks;
 		synchronized(slaveTasks) {
 			deadTasks = slaveTasks.get(slaveId);
@@ -269,32 +367,41 @@ public class MasterCoordinator {
 			slaveTasks.put(slaveId, new LinkedList<Task>());
 		}
 	}
-	
+
+	/**
+	 * 
+	 * @return Returns a string describing all of the jobs
+	 */
 	public String allJobsInfo() {
 		String retStr = "*******All jobs info*******\n";
 		Set<Integer> jobs;
 		synchronized(jobTasks) {
 			jobs = jobTasks.keySet();
 		}
-		
+
 		for (Integer jId : jobs) {
 			retStr = retStr + jobInfo(jId);
 		}
-		
+
 		return retStr;
 	}
-	
+
+	/**
+	 * 
+	 * @param jId The job for a summary
+	 * @return Returns a summary of all of the info about a job.
+	 */
 	public String jobInfo(int jId) {
 		MapReduceJob j;
 		List<Task> tasks;
-		
+
 		synchronized(jobTasks) {
 			tasks = jobTasks.get(jId);
 		}
 		synchronized(idToJob) {
 			j = idToJob.get(jId);
 		}
-		
+
 		String retStr = "Job " + jId + "(" + j.getClass().getCanonicalName()+ ")\n";
 		retStr += "Number of tasks: " +tasks.size() + "\n";
 		for (int i = 0; i < tasks.size(); i++) {
@@ -316,7 +423,7 @@ public class MasterCoordinator {
 			}
 		}
 		retStr += "";
-		
+
 		return retStr;
 	}
 

@@ -22,15 +22,16 @@ public class SlaveCoordinator {
 		FilePartition partition = m.getPartition();
 		FileRecordReader reader = new FileRecordReader(partition.getFileName(), job.getRecordSize());
 		String[][] inputs = reader.getKeyValuePairs(partition.getPartitionIndex(), partition.getPartitionSize());
-		String[][] outputs = new String[inputs.length][2];
+		List<String[]> outputs = new LinkedList<String[]>();
 		
 		//perform the mapping
 		for (int i = 0; i < inputs[0].length; i++) {
-			outputs[i] = job.map(inputs[i][0], inputs[i][1]);
+			List<String[]> temp = job.map(inputs[i][0], inputs[i][1]);
+			outputs.addAll(temp);
 		}
 		
 		FileRecordWriter writer = new FileRecordWriter(m.getOutputFile(), job.getRecordSize());
-		writer.writeOut(outputs);
+		writer.writeOut((String[][])outputs.toArray());
 		
 		//TODO mark the task as done.
 		notifyMasterTaskComplete(m);
@@ -95,7 +96,6 @@ public class SlaveCoordinator {
 		
 		notifyMasterTaskComplete(r);
 	}
-	
 	
 	public void notifyMasterTaskComplete(Task t) {
 		t.setStatus(MapTask.DONE);

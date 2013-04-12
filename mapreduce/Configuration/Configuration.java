@@ -20,11 +20,11 @@ public class Configuration {
 	//The max number of tasks to be running on one slave at a time
 	public static final int MAX_TASKS_PER_NODE = 3;
 	
-	public static final String[] SLAVE_ADDRESS = 	{"unix11.andrew.cmu.edu", 
-													 "unix12.andrew.cmu.edu",
-													 "unix9.andrew.cmu.edu",
-													 "unix8.andrew.cmu.edu"};
+	public static final String[] SLAVE_ADDRESS = 	{"unix12.andrew.cmu.edu", 
+													 "unix13.andrew.cmu.edu",
+													 "unix14.andrew.cmu.edu",
+													 "unix15.andrew.cmu.edu"};
 	
-	public static final String MASTER_ADDRESS = "unix7.andrew.cmu.edu";
+	public static final String MASTER_ADDRESS = "unix16.andrew.cmu.edu";
 	
 }
