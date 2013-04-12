@@ -31,7 +31,7 @@ public class SlaveCoordinator {
 		}
 		
 		FileRecordWriter writer = new FileRecordWriter(m.getOutputFile(), job.getRecordSize());
-		writer.writeOut((String[][])outputs.toArray());
+		writer.writeOut(outputs);
 		
 		//TODO mark the task as done.
 		notifyMasterTaskComplete(m);
@@ -92,7 +92,7 @@ public class SlaveCoordinator {
 		}
 		
 		FileRecordWriter writer = new FileRecordWriter(r.getOutputFile(), job.getRecordSize());
-		writer.writeOut((String[][])outputs.toArray());
+		writer.writeOut(outputs);
 		
 		notifyMasterTaskComplete(r);
 	}

@@ -3,6 +3,7 @@ package Util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class FileRecordWriter {
 	private String fileName;
@@ -13,7 +14,7 @@ public class FileRecordWriter {
 		this.recordLength = _recordLength;
 	}
 	
-	public void writeOut(String[][] keyVals) {
+	public void writeOut(List<String[]> keyVals) {
 		FileOutputStream fOut = null;
 		try {
 			fOut = new FileOutputStream(new File(fileName), true);
@@ -22,8 +23,8 @@ public class FileRecordWriter {
 			e.printStackTrace();
 		}
 		
-		for (int i = 0; i < keyVals.length; i++) {
-			String tempstr = keyVals[i][0] + "\\:" + keyVals[i][1];
+		for (int i = 0; i < keyVals.size(); i++) {
+			String tempstr = keyVals.get(i)[0] + "\\:" + keyVals.get(i)[1];
 			byte[] fullRecord = new byte[recordLength];
 			byte bytes[] = tempstr.getBytes();
 			

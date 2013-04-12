@@ -27,8 +27,7 @@ public class WordCountFileCreator {
 		}
 		br.close();
 		
-		String[][] kvs = (String[][])lines.toArray();
-		fw.writeOut(kvs);
+		fw.writeOut(lines);
 	}
 
 }
