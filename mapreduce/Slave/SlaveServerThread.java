@@ -44,7 +44,6 @@ public class SlaveServerThread extends Thread {
 			try {
 				s = sSock.accept();
 			} catch (Exception e) {
-				System.err.println("Exception waiting for client connection " + e.getMessage());
 				continue;
 			}
 			

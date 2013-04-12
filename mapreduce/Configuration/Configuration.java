@@ -25,6 +25,6 @@ public class Configuration {
 													 "unix14.andrew.cmu.edu",
 													 "unix1.andrew.cmu.edu"};*/
 	
-	public static final String MASTER_ADDRESS = "unix16.andrew.cmu.edu";
+	public static final String MASTER_ADDRESS = "unix3.andrew.cmu.edu";
 	
 }
