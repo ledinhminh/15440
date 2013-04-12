@@ -54,7 +54,7 @@ public class FileRecordReader {
 		}
 		
 		String[] res = new String[2];
-		String[][] pairs = new String[2][partitionSize];
+		String[][] pairs = new String[partitionSize][2];
 		//read with constant key/value sizes
 		byte[] b = new byte[recordLength];
 
