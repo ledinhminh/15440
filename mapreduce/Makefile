@@ -2,7 +2,7 @@ JFLAGS =
 JC = javac
 .SUFFIXES: .java .class
 .java.class:
-	$(JC) $(JFLAGS) $*.java
+	$(JC) $(JFLAGS) $./*/*.java
 
 CLASSES = \
 	Configuration/Configuration.java \

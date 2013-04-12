@@ -23,7 +23,7 @@ public class Configuration {
 	public static final String[] SLAVE_ADDRESS = 	{"unix12.andrew.cmu.edu", 
 													 "unix13.andrew.cmu.edu",
 													 "unix14.andrew.cmu.edu",
-													 "unix15.andrew.cmu.edu"};
+													 "unix1.andrew.cmu.edu"};
 	
 	public static final String MASTER_ADDRESS = "unix16.andrew.cmu.edu";
 	
