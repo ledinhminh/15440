@@ -13,6 +13,10 @@ public class Configuration {
 	//The number of records to allocate to a single map
 	public static final int RECORDS_PER_MAP = 50;
 	
+	//The number of records to allocate to a single reduce
+	//(Not a hard limit as reduces reduce full files at a time)
+	public static final int RECORDS_PER_REDUCE = 100;
+	
 	//The max number of tasks to be running on one slave at a time
 	public static final int MAX_TASKS_PER_NODE = 3;
 	

@@ -15,6 +15,7 @@ public class MapTask implements Serializable, Task{
 	
 	private int taskId;
 	private int jobId;
+	private int slaveId;
 	private FilePartition partition;
 	private MapReduceJob job;
 	private String outputFile;
@@ -70,6 +71,14 @@ public class MapTask implements Serializable, Task{
 	}
 	public void setStatus(char status) {
 		this.status = status;
+	}
+
+	public int getSlaveId() {
+		return slaveId;
+	}
+
+	public void setSlaveId(int slaveId) {
+		this.slaveId = slaveId;
 	}
 	
 }

@@ -1,53 +1,82 @@
 package Util;
 
-public class ReduceTask implements Task {
+import java.io.Serializable;
+import java.util.List;
 
-	@Override
+public class ReduceTask implements Serializable, Task {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8552240454021458949L;
+	
+	private int slaveId;
+	private int taskId;
+	private int jobId;
+	private List<String> inputFiles;
+	private MapReduceJob job;
+	private String outputFile;
+	private char status;
+	
+	public static final char RUNNING = 'r';
+	public static final char DONE = 'd';
+	public static final char FAILED = 'f';
+	public static final char NOT_STARTED = 'n';
+	
+	public ReduceTask(int _taskId, int _jobId, List<String> _inputFiles, MapReduceJob j,
+			String _outputFile) {
+		this.taskId = _taskId;
+		this.jobId = _jobId;
+		this.inputFiles = _inputFiles;
+		this.job = j;
+		this.outputFile = _outputFile;
+		this.status = NOT_STARTED;
+	}
+	
 	public int getTaskId() {
-		// TODO Auto-generated method stub
-		return 0;
+		return taskId;
 	}
-
-	@Override
 	public void setTaskId(int taskId) {
-		// TODO Auto-generated method stub
-
+		this.taskId = taskId;
 	}
-
-	@Override
 	public int getJobId() {
-		// TODO Auto-generated method stub
-		return 0;
+		return jobId;
 	}
-
-	@Override
 	public void setJobId(int jobId) {
-		// TODO Auto-generated method stub
-
+		this.jobId = jobId;
 	}
-
-	@Override
+	public List<String> getInputFiles() {
+		return inputFiles;
+	}
+	public void setInputFiles(List<String> inputFiles) {
+		this.inputFiles = inputFiles;
+	}
 	public MapReduceJob getJob() {
-		// TODO Auto-generated method stub
-		return null;
+		return job;
 	}
-
-	@Override
 	public void setJob(MapReduceJob job) {
-		// TODO Auto-generated method stub
-
+		this.job = job;
 	}
-
-	@Override
+	public String getOutputFile() {
+		return outputFile;
+	}
+	public void setOutputFile(String outputFile) {
+		this.outputFile = outputFile;
+	}
 	public char getStatus() {
-		// TODO Auto-generated method stub
-		return 0;
+		return status;
 	}
-
-	@Override
 	public void setStatus(char status) {
-		// TODO Auto-generated method stub
-
+		this.status = status;
 	}
+	
+	public int getSlaveId() {
+		return slaveId;
+	}
+
+	public void setSlaveId(int slaveId) {
+		this.slaveId = slaveId;
+	}
+
 
 }

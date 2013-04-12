@@ -37,7 +37,7 @@ public interface MapReduceJob extends Serializable {
 	 * 			the result of a previous reduce)
 	 * @return Returns a single reduced value from all of the given vals.
 	 */
-	public String reduce(String key, String[] vals, String initVal);
+	public String reduce(String key, List<String> vals, String initVal);
 	
 
 }
