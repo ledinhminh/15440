@@ -14,4 +14,6 @@ public interface Task {
 	public void setJobId(int jobId);
 	public MapReduceJob getJob();
 	public void setJob(MapReduceJob job);
+	public char getStatus();
+	public void setStatus(char status);
 }

@@ -1,4 +1,4 @@
-package Master;
+package Slave;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -7,20 +7,12 @@ import java.net.Socket;
 import Configuration.Configuration;
 
 
-/**
- * 
- * @author nickzukoski
- *
- * MasterServerThread is the thread that listens for network communication in
- * and deals with it appropriately.
- */
-public class MasterServerThread extends Thread {
-	private MasterCoordinator coord;
-	//true if the thread should keep running, false for it to stop
+public class SlaveServerThread extends Thread {
+	private SlaveCoordinator coord;
 	private volatile boolean running;
-	ServerSocket sSock;
+	private ServerSocket sSock;
 	
-	public MasterServerThread(MasterCoordinator _coord) {
+	public SlaveServerThread(SlaveCoordinator _coord) {
 		this.running = true;
 		this.coord = _coord;
 		try {
@@ -56,11 +48,9 @@ public class MasterServerThread extends Thread {
 				continue;
 			}
 			
-			MasterCommThread t = new MasterCommThread(coord,s);
+			SlaveCommThread t = new SlaveCommThread(coord, s);
 			t.start();	
 		}
 	}
-
-}
-
 	
+}

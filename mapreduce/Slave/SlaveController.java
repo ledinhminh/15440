@@ -1,4 +1,4 @@
-package Master;
+package Slave;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,29 +8,22 @@ import java.util.List;
 
 import Util.MapReduceJob;
 
-/**
- * 
- * @author nickzukoski
- *
- * MasterController is the class to run to start the master node.
- * It spawns off a thread to listen for server input and listens 
- * for stdin input as well.
- */
-public class MasterController {
-	private static MasterCoordinator coord;
-    
+public class SlaveController {
+	private static SlaveCoordinator coord;
+
 	public static void main (String args[]) {
-		coord = new MasterCoordinator();
-		MasterServerThread serverThread = new MasterServerThread(coord);
+		coord = new SlaveCoordinator();
+		SlaveServerThread serverThread = new SlaveServerThread(coord);
 		serverThread.start();
+
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		
+
 		while (true) {
 			//read stdin input and deal with it.
 			try {
 				String input = reader.readLine();
 				String[] jobArgs = input.split(" ");
-				
+
 				if (jobArgs[0].equals("start")) {
 					if (jobArgs.length < 4) {
 						System.out.println("Format: start (jobclass) (outputfile) (inputfiles ...)");
@@ -39,21 +32,19 @@ public class MasterController {
 					//Starting a new job
 					String jobName = jobArgs[1];
 					MapReduceJob job = (MapReduceJob) Class.forName(jobName).newInstance();
-					
+
 					job.setOutputFile(jobArgs[2]);
 					List<String> inputFiles = new ArrayList<String>();
 					for (int i = 3; i < jobArgs.length; i++) {
 						inputFiles.add(jobArgs[i]);
 					}
-					
+
 					job.setInputFiles(inputFiles);
-					
-					coord.newJob(job);
+					//TODO send the newly requested job to the master
 					System.out.println(jobName + " started!");
 					continue;
 				}
 				//TODO add other command line functionality
-				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -67,9 +58,6 @@ public class MasterController {
 				System.out.println("Job class not found" + e.getMessage());
 				continue;
 			}
-			
-			
 		}
-    	
-    }
+	}
 }

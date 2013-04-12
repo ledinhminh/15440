@@ -22,6 +22,7 @@ public class MapTask implements Serializable, Task{
 	
 	public static final char RUNNING = 'r';
 	public static final char DONE = 'd';
+	public static final char FAILED = 'f';
 	public static final char NOT_STARTED = 'n';
 	
 	public MapTask(int _taskId, int _jobId, FilePartition _p, MapReduceJob j,
