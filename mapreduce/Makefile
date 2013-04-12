@@ -7,6 +7,7 @@ JC = javac
 CLASSES = \
 	Configuration/Configuration.java \
 	Examples/WordCount.java \
+	Examples/WordCountFileCreator.java \
 	Master/MasterCoordinator.java \
 	Master/MasterCommThread.java \
 	Master/MasterController.java \
