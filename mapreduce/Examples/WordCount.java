@@ -65,7 +65,8 @@ public class WordCount implements MapReduceJob {
 	public String reduce(String key, List<String> vals, String initVal) {
 		int count = Integer.parseInt(initVal);
 		for (String s : vals) {
-			count += Integer.parseInt(s);
+			System.out.println("about to parse:" +s+"__");
+			count += Integer.parseInt(s.trim());
 		}
 		return ""+count;
 	}

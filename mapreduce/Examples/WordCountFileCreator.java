@@ -23,10 +23,10 @@ public class WordCountFileCreator {
 		BufferedReader br = new BufferedReader(new FileReader(args[0]));
 		String line;
 		while ((line = br.readLine()) != null) {
-		   lines.add(new String[] {"", line});
+		   lines.add(new String[] {" ", line});
 		}
 		br.close();
-		
+		System.out.println(wcJob.getClass().getName());
 		fw.writeOut(lines);
 	}
 

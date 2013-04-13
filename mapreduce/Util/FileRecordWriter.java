@@ -35,7 +35,7 @@ public class FileRecordWriter {
 			}
 			
 			for (int j = 0; j < recordLength; j++) {
-				if (j > bytes.length - 1)  fullRecord[j] = bytes[j];
+				if (j < bytes.length - 1)  fullRecord[j] = bytes[j];
 				else fullRecord[j] = 0;
 			}
 			

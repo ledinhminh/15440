@@ -34,7 +34,7 @@ public class MasterDispatchThread extends Thread {
 	public void run() {
 		Socket s;
 		try {
-			s = new Socket(addr, Configuration.COM_PORT);
+			s = new Socket(Configuration.SLAVE_ADDRESS[slaveId], Configuration.COM_PORT);
 		} catch (IOException e) {
 			System.err.println("Error opening socket to slave with id:" + slaveId);
 			e.printStackTrace();

@@ -1,5 +1,5 @@
 package Util;
-
+import java.io.*;
 /**
  * 
  * @author nickzukoski
@@ -7,7 +7,7 @@ package Util;
  * NetworkMessage packages up a message to be sent over the network
  * between the master and a slave
  */
-public class NetworkMessage {
+public class NetworkMessage implements Serializable {
 	//Sent from master:
 	public static final char RUN_MAP = 'm';
 	public static final char RUN_REDUCE = 'r';

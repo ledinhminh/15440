@@ -25,14 +25,14 @@ public class SlaveCoordinator {
 		List<String[]> outputs = new LinkedList<String[]>();
 		
 		//perform the mapping
-		for (int i = 0; i < inputs[0].length; i++) {
+		for (int i = 0; i < inputs.length; i++) {
 			List<String[]> temp = job.map(inputs[i][0], inputs[i][1]);
 			outputs.addAll(temp);
 		}
 		
 		FileRecordWriter writer = new FileRecordWriter(m.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
-		
+		System.out.println("map task done");	
 		//TODO mark the task as done.
 		notifyMasterTaskComplete(m);
 	}
@@ -93,7 +93,7 @@ public class SlaveCoordinator {
 		
 		FileRecordWriter writer = new FileRecordWriter(r.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
-		
+		System.out.println("Reduce Task done");
 		notifyMasterTaskComplete(r);
 	}
 	
@@ -102,7 +102,7 @@ public class SlaveCoordinator {
 		NetworkMessage msg = new NetworkMessage();
 		msg.setTask(t);
 		msg.setType(NetworkMessage.TASK_FINISHED);
-		
+		System.out.println("notifying master jId:" + t.getJobId() + " tId:" + t.getTaskId() + " is done");
 		//now send the message to the master
 		try {
 			Socket s = new Socket(Configuration.MASTER_ADDRESS, Configuration.COM_PORT);

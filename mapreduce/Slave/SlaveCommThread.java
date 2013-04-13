@@ -51,9 +51,11 @@ public class SlaveCommThread extends Thread {
 		// 		an ack before starting the task.
 		switch (msg.getType()) {
 		case NetworkMessage.RUN_MAP:
+			System.out.println("New map task received");
 			coord.newMap((MapTask)msg.getTask());
 			break;
 		case NetworkMessage.RUN_REDUCE:
+			System.out.println("New reduce task received");
 			coord.newReduce((ReduceTask)msg.getTask());
 			break;
 		default:
