@@ -17,17 +17,16 @@ public class FileRecordWriter {
 	public void writeOut(List<String[]> keyVals) {
 		FileOutputStream fOut = null;
 		try {
-			fOut = new FileOutputStream(new File(fileName), true);
+			fOut = new FileOutputStream(new File(fileName), false);
 		} catch (IOException e) {
 			System.err.println("Error opening file to write out: " + fileName);
 			e.printStackTrace();
 		}
 		
 		for (int i = 0; i < keyVals.size(); i++) {
-			String tempstr = keyVals.get(i)[0] + "\\:" + keyVals.get(i)[1];
+			String tempstr = keyVals.get(i)[0] + "::" + keyVals.get(i)[1];
 			byte[] fullRecord = new byte[recordLength];
 			byte bytes[] = tempstr.getBytes();
-			
 			if (bytes.length > recordLength) {
 				System.err.println("Record too long to record: " + bytes.length + 
 						" max recordLength: " + recordLength);
@@ -35,7 +34,7 @@ public class FileRecordWriter {
 			}
 			
 			for (int j = 0; j < recordLength; j++) {
-				if (j < bytes.length - 1)  fullRecord[j] = bytes[j];
+				if (j < bytes.length)  fullRecord[j] = bytes[j];
 				else fullRecord[j] = 0;
 			}
 			

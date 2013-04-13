@@ -90,7 +90,12 @@ public class SlaveCoordinator {
 				sameKeyInputs.add(inputs[i][1]);
 			}
 		}
-		
+
+		if (sameKeyInputs.size() > 0) {
+			String result = job.reduce(curKey, sameKeyInputs, job.getReduceIdentity());
+			outputs.add(new String[] {curKey, result});	
+		}
+
 		FileRecordWriter writer = new FileRecordWriter(r.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
 		System.out.println("Reduce Task done");

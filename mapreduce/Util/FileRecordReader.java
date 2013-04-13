@@ -52,11 +52,6 @@ public class FileRecordReader {
 			e1.printStackTrace();
 			return null;
 		}
-		try {
-			System.out.println("file length:" + file.length());
-		} catch (Exception e ) {
-			System.err.println("shitttites");
-		}
 		String[] res = new String[2];
 		String[][] pairs = new String[partitionSize][2];
 		//read with constant key/value sizes
@@ -65,7 +60,6 @@ public class FileRecordReader {
 
 		for (int recordNum = 0; recordNum < partitionSize; recordNum++) {
 			try {
-				System.out.println("ptIdx:" + partitionIndex + " recordNum:" + recordNum + " recL:" + recordLength);
 				
 				int bytesRead = file.read(b);
 				
@@ -85,9 +79,8 @@ public class FileRecordReader {
 			String s = new String(b);
 
 			//TODO make sure these offsets are correct
-			System.out.println("reading in record:" + s);
 			int splitIndex = s.indexOf("::");
-			res[0]         = s.substring(0, splitIndex - 1).trim();
+			res[0]         = s.substring(0, splitIndex).trim();
 			res[1]         = s.substring(splitIndex + 2, recordLength - 1).trim();
 
 			pairs[recordNum] = res.clone();

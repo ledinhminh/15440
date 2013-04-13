@@ -71,7 +71,6 @@ public class MasterCoordinator {
 		int jId = curJobId++;
 		int taskId = 0;
 		List<Task> mTasks = new ArrayList<Task>();
-
 		//split up the input files into partitions to be mapped
 		for (String fName : j.getInputFiles()) {
 			FileRecordReader reader = new FileRecordReader(fName, j.getRecordSize());
@@ -141,6 +140,8 @@ public class MasterCoordinator {
 			synchronized(jobStatuses) {
 				jobStatuses.put(jId, "Done");
 			}
+			
+			return;
 		}
 		
 		//Need to create a series of reduce tasks to send out.
@@ -269,6 +270,9 @@ public class MasterCoordinator {
 				//pop the task off the queue and send it to a slave
 				itr.remove();
 				t.setSlaveId(bestHost);
+				synchronized(slaveTasks) {
+					slaveTasks.get(bestHost).add(t);
+				}
 				dispatchTaskToSlave(t, bestHost);
 			}
 		}
@@ -316,9 +320,15 @@ public class MasterCoordinator {
 
 		if (allSiblingsDone) {
 			taskRoundCompleted(jId);
-			
-			if (jobStatuses.get(jId).equals("Mapping")) {
+			String status;
+			synchronized(jobStatuses) {
+				status = jobStatuses.get(jId);
+			}
+			if (status.equals("Mapping")) {
 				jobStatuses.put(jId, "Reducing");
+			} else if (status.equals("Done")) {
+				//Were done, don't need to make any more tasks
+				return;
 			}
 
 			
@@ -327,6 +337,7 @@ public class MasterCoordinator {
 		synchronized (slaveTasks) {
 			List<Task> tasks = slaveTasks.get(t.getSlaveId());
 			Iterator<Task> itr = tasks.iterator();
+			System.out.println("job done, # were on slave" + tasks.size());
 			while (itr.hasNext()) {
 				Task check_t = itr.next();
 
@@ -337,6 +348,7 @@ public class MasterCoordinator {
 					return;
 				}
 			}
+			System.out.println("now on slave:" + slaveTasks.get(t.getSlaveId()).size());
 		}
 
 		//distribute another task if there are tasks waiting.

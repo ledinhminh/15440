@@ -35,12 +35,15 @@ public class SlaveController {
 
 					job.setOutputFile(jobArgs[2]);
 					List<String> inputFiles = new ArrayList<String>();
+					
 					for (int i = 3; i < jobArgs.length; i++) {
 						inputFiles.add(jobArgs[i]);
 					}
 
 					job.setInputFiles(inputFiles);
-					//TODO send the newly requested job to the master
+					
+					SlaveDispatchThread t = new SlaveDispatchThread(job);
+					t.start();
 					System.out.println(jobName + " started!");
 					continue;
 				}
