@@ -11,9 +11,18 @@ import Util.MapReduceJob;
 public class SlaveController {
 	private static SlaveCoordinator coord;
 	private static SlaveServerThread serverThread;
+	private static BufferedReader reader;
+	private static boolean running = true;
 	
 	public static void stopProgram() {
+		running = false;
+		try {
+			reader.close();
+		} catch (Exception e) {
+			//meh, were shutting down anyway
+		}
 		serverThread.stopThread();
+		System.exit(0);
 	}
 
 	public static void main (String args[]) {
@@ -23,7 +32,7 @@ public class SlaveController {
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-		while (true) {
+		while (running) {
 			//read stdin input and deal with it.
 			try {
 				String input = reader.readLine();
@@ -54,9 +63,10 @@ public class SlaveController {
 				} else if (input.equals("list")) {
 					System.out.println(coord.getInfo());
 				}
-				//TODO add other command line functionality
+				else if (input.equals("quit")) {
+					SlaveController.stopProgram();
+				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InstantiationException e) {
 				System.out.println("Could not instantiate job class" + e.getMessage());

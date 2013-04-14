@@ -54,7 +54,7 @@ public class MasterCoordinator {
 		for (String slave : Configuration.SLAVE_ADDRESS) {
 			try {
 				InetAddress addr = InetAddress.getByName(slave);
-				slaveIdToAddr.put(slaveId++, addr);
+				slaveIdToAddr.put(++slaveId, addr);
 				slaveTasks.put(slaveId, new LinkedList<Task>());
 			} catch (UnknownHostException e) {
 				System.out.println("couldn't resolve slave named: " + slave);
@@ -70,7 +70,7 @@ public class MasterCoordinator {
 	 */
 	public void newJob(MapReduceJob j) {
 		int jId = curJobId++;
-		int taskId = -1;
+		int taskId = 0;
 		List<Task> mTasks = new ArrayList<Task>();
 		//split up the input files into partitions to be mapped
 		for (String fName : j.getInputFiles()) {
@@ -116,7 +116,8 @@ public class MasterCoordinator {
 	 * @param jId The id of the job
 	 */
 	private void taskRoundCompleted(int jId) {
-		System.out.println("Job " + jId + " completed a task round");
+		if (Configuration.printAll)
+			System.out.println("Job " + jId + " completed a task round");
 		List<String> newInputFiles;
 		synchronized(filesToProcess) {
 			newInputFiles = filesToProcess.get(jId);
@@ -134,7 +135,8 @@ public class MasterCoordinator {
 	
 		System.out.println("new input files:" + newInputFiles.size());
 		if (newInputFiles.size() == 1 &&  status.endsWith("Reducing")) {
-			System.out.println("Job " + jId + " is done!");
+			if (Configuration.printAll)
+				System.out.println("Job " + jId + " is done!");
 			//move the final reduced file to the desired output file
 			copyFileToOutput(newInputFiles.get(0), j.getOutputFile());
 			//clean up the temporary files
@@ -174,8 +176,8 @@ public class MasterCoordinator {
 			ReduceTask t = new ReduceTask(curTaskId, jId, curTaskFiles, j, outF);
 			newTasks.add(t);
 		}
-
-		System.out.println("Job " + jId + " has " + newTasks.size() + "new Tasks");
+		if (Configuration.printAll)
+			System.out.println("Job " + jId + " has " + newTasks.size() + "new Tasks");
 		synchronized(jobTasks) {
 			jobTasks.get(jId).addAll(newTasks);
 		}
@@ -238,12 +240,14 @@ public class MasterCoordinator {
 	 * slave nodes to be processed.
 	 */
 	public void distributeTasks() {
-		System.out.println("distributing tasks");
+		if (Configuration.printAll)
+			System.out.println("distributing tasks");
 		synchronized (queuedTasks) {
 			Iterator<Task> itr = queuedTasks.iterator();
 			while (itr.hasNext()) {
 				Task t = itr.next();
-				System.out.println("trying to distribute task " + t.getTaskId());
+				if (Configuration.printAll)
+					System.out.println("trying to distribute task " + t.getTaskId());
 				int bestHost = -1;
 				//Iterate through to find a host that can accommodate another task
 				synchronized (slaveTasks) {
@@ -252,7 +256,6 @@ public class MasterCoordinator {
 							continue; //If the slave is unresponsive then just keep going
 						
 						int numTasks = slaveTasks.get(i).size();
-						System.out.println("Slave " + i +" has " + numTasks + "tasks on it"); 
 						if (numTasks >= Configuration.MAX_TASKS_PER_NODE) continue;
 						if (numTasks == 0) {
 							bestHost = i;
@@ -264,7 +267,8 @@ public class MasterCoordinator {
 							bestHost = i;
 					}
 				}
-				System.out.println("best host for this task is slave " + bestHost);
+				if (Configuration.printAll)
+					System.out.println("best host for this task is slave " + bestHost);
 				if (bestHost == -1) {
 					//No host can accept any new tasks right now :(
 					return;
@@ -289,7 +293,8 @@ public class MasterCoordinator {
 		System.out.println("Task finished jId:" + t.getJobId() + " tId:" + t.getTaskId());
 		synchronized(unresponsiveSlaves) {
 			if (unresponsiveSlaves.contains(t.getSlaveId())) {
-				System.out.println("Unresponive slave notifying of task finished");
+				if (Configuration.printAll)
+					System.out.println("Unresponive slave notifying of task finished");
 				//a presumed unresponsive slave has come back up,
 				//ignore the work but mark the slave as useful.
 				unresponsiveSlaves.remove((Integer)t.getSlaveId());
@@ -343,7 +348,6 @@ public class MasterCoordinator {
 			if (status.equals("Mapping")) {
 				jobStatuses.put(jId, "Reducing");
 			} else if (status.equals("Done")) {
-				System.out.println("not continuing because were done");
 				//Were done, don't need to make any more tasks
 				return;
 			}
@@ -361,7 +365,8 @@ public class MasterCoordinator {
 	 * @param slaveId The slave to send it to
 	 */
 	private void dispatchTaskToSlave(Task t, int slaveId) {
-		System.out.println("Distributing jId:" + t.getJobId() + " tId:" + t.getTaskId() + " to slave " + slaveId);
+		if (Configuration.printAll)
+			System.out.println("Distributing jId:" + t.getJobId() + " tId:" + t.getTaskId() + " to slave " + slaveId);
 		t.setStatus(MapTask.RUNNING);
 		boolean isMap = t instanceof MapTask ? true : false;
 		MasterDispatchThread dispatchThread = new MasterDispatchThread(t, slaveId,slaveIdToAddr.get(slaveId), 
@@ -377,7 +382,8 @@ public class MasterCoordinator {
 	 * @param slaveId The slave Id that is now unresponsive
 	 */
 	public void markSlaveUnresponsive(int slaveId) {
-		System.out.println("slave " + slaveId + "seems to be dead");
+		if (Configuration.printAll)
+			System.out.println("slave " + slaveId + "seems to be dead");
 		synchronized(unresponsiveSlaves) {
 			unresponsiveSlaves.add(slaveId);
 		}

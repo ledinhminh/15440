@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 import Util.*;
+import Configuration.*;
 
 public class SlaveCommThread extends Thread {
 	private SlaveCoordinator coord;
@@ -50,7 +51,19 @@ public class SlaveCommThread extends Thread {
 		//TODO if the message doesn't require an immediete response, reply with
 		// 		an ack before starting the task.
 		switch (msg.getType()) {
+		case NetworkMessage.RUN_MAP:
+			if (Configuration.printAll)
+				System.out.println("New map task received");
+			coord.newMap((MapTask)msg.getTask());
+			break;
+		case NetworkMessage.RUN_REDUCE:
+			if (Configuration.printAll)
+				System.out.println("New reduce task received");
+			coord.newReduce((ReduceTask)msg.getTask());
+			break;
 		case NetworkMessage.STOP_PROGRAM:
+			if (Configuration.printAll)
+				System.out.println("STOP_PROGRAM recieved!");
 			SlaveController.stopProgram();
 			break;
 		default:
@@ -65,18 +78,6 @@ public class SlaveCommThread extends Thread {
 		} catch (IOException e) {
 			System.err.println("Error ACKing a new Job message");
 			e.printStackTrace();
-		}
-		
-		//Case statements for non immediate responses.
-		switch (msg.getType()) {
-		case NetworkMessage.RUN_MAP:
-			System.out.println("New map task received");
-			coord.newMap((MapTask)msg.getTask());
-			break;
-		case NetworkMessage.RUN_REDUCE:
-			System.out.println("New reduce task received");
-			coord.newReduce((ReduceTask)msg.getTask());
-			break;
 		}
 		
 		return;

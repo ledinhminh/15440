@@ -46,7 +46,7 @@ public class LargestWord implements MapReduceJob {
 
 	@Override
 	public String getReduceIdentity() {
-		return "0, ";
+		return "0";
 	}
 
 	@Override
@@ -55,7 +55,7 @@ public class LargestWord implements MapReduceJob {
 		List<String[]> output = new ArrayList<String[]>(words.length);
 		
 		for (String w : words) {
-			output.add(new String[] { " ", w});
+			output.add(new String[] { "Largest word", w});
 		}
 			
 		return output;

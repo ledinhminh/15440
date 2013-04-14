@@ -29,6 +29,7 @@ public class SlaveServerThread extends Thread {
 	 * closes the socket and ends the infinite read loop.
 	 */
 	public void stopThread() {
+		System.out.println("stopping server");
 		running = false;
 		try {
 			sSock.close();

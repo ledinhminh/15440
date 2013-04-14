@@ -37,7 +37,8 @@ public class SlaveCoordinator {
 		
 		FileRecordWriter writer = new FileRecordWriter(m.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
-		System.out.println("map task done");	
+		if (Configuration.printAll)
+			System.out.println("map task done");	
 		
 		synchronized(tasks) {
 			tasks.remove(m);
@@ -109,7 +110,8 @@ public class SlaveCoordinator {
 
 		FileRecordWriter writer = new FileRecordWriter(r.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
-		System.out.println("Reduce Task done");
+		if (Configuration.printAll)
+			System.out.println("Reduce Task done");
 		
 		synchronized(tasks) {
 			tasks.remove(r);

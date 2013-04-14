@@ -85,7 +85,6 @@ public class MasterDispatchThread extends Thread {
 			unableToConnect();
 		}
 		
-		
 		try {
 			s.close();
 		} catch (IOException e) {

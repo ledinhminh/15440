@@ -1,1 +1,10 @@
-hi nix
+To build:
+Make
+
+To run Master:
+java Master/MasterController
+
+To run Participant:
+java Slave/SlaveController
+
+See MapReduceWriteup.pdf for more information
