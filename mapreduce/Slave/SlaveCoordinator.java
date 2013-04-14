@@ -15,7 +15,12 @@ import Configuration.*;
 
 public class SlaveCoordinator {
 	
+	private List<Task> tasks = new LinkedList<Task>();
+	
 	public void newMap(MapTask m) {
+		synchronized(tasks) {
+			tasks.add(m);
+		}
 		//TODO make a record of the task so that if its asked about we have
 		// something to say
 		MapReduceJob job = m.getJob();
@@ -33,12 +38,18 @@ public class SlaveCoordinator {
 		FileRecordWriter writer = new FileRecordWriter(m.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
 		System.out.println("map task done");	
-		//TODO mark the task as done.
+		
+		synchronized(tasks) {
+			tasks.remove(m);
+		}
 		notifyMasterTaskComplete(m);
 	}
 	
 	
 	public void newReduce(ReduceTask r) {
+		synchronized(tasks) {
+			tasks.add(r);
+		}
 		
 		MapReduceJob job = r.getJob();
 		List<String> inputFiles = r.getInputFiles();
@@ -99,6 +110,10 @@ public class SlaveCoordinator {
 		FileRecordWriter writer = new FileRecordWriter(r.getOutputFile(), job.getRecordSize());
 		writer.writeOut(outputs);
 		System.out.println("Reduce Task done");
+		
+		synchronized(tasks) {
+			tasks.remove(r);
+		}
 		notifyMasterTaskComplete(r);
 	}
 	
@@ -130,6 +145,18 @@ public class SlaveCoordinator {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	public String getInfo() {
+		String retStr = "Tasks Currently Running:";
+		
+		synchronized(tasks) {
+			for (Task t : tasks) {
+				retStr += "    Task " + t.getTaskId() + " for job: " + t.getJobId() + "\n";
+			}
+		}
+		
+		return retStr;
 	}
 
 }

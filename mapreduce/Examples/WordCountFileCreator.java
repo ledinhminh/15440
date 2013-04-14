@@ -11,7 +11,8 @@ import Util.FileRecordReader;
 /**
  * 
  * @author nickzukoski
- * Sets up the input record file for a WordCount mapReduce
+ * Sets up the input record file for both WordCount map reduce
+ * and LongestWord mapreduce jobs.
  */
 public class WordCountFileCreator {
 	public static void main (String args[]) throws IOException {

@@ -47,8 +47,9 @@ public class MasterCoordinator {
 
 	//List of unresponsive slaves
 	private List<Integer> unresponsiveSlaves = new LinkedList<Integer>();
-
+	
 	public MasterCoordinator() {
+		
 		int slaveId = -1;
 		for (String slave : Configuration.SLAVE_ADDRESS) {
 			try {
@@ -69,7 +70,7 @@ public class MasterCoordinator {
 	 */
 	public void newJob(MapReduceJob j) {
 		int jId = curJobId++;
-		int taskId = 0;
+		int taskId = -1;
 		List<Task> mTasks = new ArrayList<Task>();
 		//split up the input files into partitions to be mapped
 		for (String fName : j.getInputFiles()) {
@@ -130,6 +131,7 @@ public class MasterCoordinator {
 		synchronized(jobStatuses) {
 			status = jobStatuses.get(jId);
 		}
+	
 		System.out.println("new input files:" + newInputFiles.size());
 		if (newInputFiles.size() == 1 &&  status.endsWith("Reducing")) {
 			System.out.println("Job " + jId + " is done!");
@@ -302,6 +304,20 @@ public class MasterCoordinator {
 			filesToProcess.get(jId).add(t.getOutputFile());
 		}
 
+		synchronized (slaveTasks) {
+			List<Task> tasks = slaveTasks.get(t.getSlaveId());
+			Iterator<Task> itr = tasks.iterator();
+			while (itr.hasNext()) {
+				Task check_t = itr.next();
+				if (check_t.getJobId() == jId
+						&& check_t.getTaskId() == t.getTaskId()) {
+					//This is the task that just finished
+					itr.remove();
+					break;
+				}
+			}
+		}
+
 		List<Task> siblingTasks;
 		boolean allSiblingsDone = true;
 
@@ -317,7 +333,7 @@ public class MasterCoordinator {
 				allSiblingsDone = false;
 			}
 		}
-
+		
 		if (allSiblingsDone) {
 			taskRoundCompleted(jId);
 			String status;
@@ -327,28 +343,11 @@ public class MasterCoordinator {
 			if (status.equals("Mapping")) {
 				jobStatuses.put(jId, "Reducing");
 			} else if (status.equals("Done")) {
+				System.out.println("not continuing because were done");
 				//Were done, don't need to make any more tasks
 				return;
 			}
-
 			
-		}
-
-		synchronized (slaveTasks) {
-			List<Task> tasks = slaveTasks.get(t.getSlaveId());
-			Iterator<Task> itr = tasks.iterator();
-			System.out.println("job done, # were on slave" + tasks.size());
-			while (itr.hasNext()) {
-				Task check_t = itr.next();
-
-				if (check_t.getJobId() == jId
-						&& check_t.getTaskId() == t.getTaskId()) {
-					//This is the task that just finished
-					itr.remove();
-					return;
-				}
-			}
-			System.out.println("now on slave:" + slaveTasks.get(t.getSlaveId()).size());
 		}
 
 		//distribute another task if there are tasks waiting.
@@ -455,6 +454,15 @@ public class MasterCoordinator {
 		retStr += "";
 
 		return retStr;
+	}
+	
+	public void fullStop() {
+		synchronized(slaveIdToAddr) {
+			for (Integer slaveId : slaveIdToAddr.keySet()) {
+				MasterDispatchThread t = new MasterDispatchThread(slaveId, slaveIdToAddr.get(slaveId));
+				t.start();
+			}
+		}
 	}
 
 }

@@ -8,10 +8,16 @@ import java.io.*;
  * between the master and a slave
  */
 public class NetworkMessage implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7141810298825134457L;
+	
 	//Sent from master:
 	public static final char RUN_MAP = 'm';
 	public static final char RUN_REDUCE = 'r';
 	public static final char GET_STATUS = '?';
+	public static final char STOP_PROGRAM = 's';
 	
 	//Sent from slaves:
 	public static final char TASK_FINISHED = 'f';

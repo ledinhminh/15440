@@ -51,6 +51,12 @@ public class MasterController {
 					coord.newJob(job);
 					System.out.println(jobName + " started!");
 					continue;
+				} else if (input.equals("list")) {
+					System.out.println(coord.allJobsInfo());
+				} else if (input.equals("quit")) {
+					coord.fullStop();
+					serverThread.stopThread();
+					break;
 				}
 				//TODO add other command line functionality
 				
@@ -67,7 +73,6 @@ public class MasterController {
 				System.out.println("Job class not found" + e.getMessage());
 				continue;
 			}
-			
 			
 		}
     	

@@ -10,10 +10,15 @@ import Util.MapReduceJob;
 
 public class SlaveController {
 	private static SlaveCoordinator coord;
+	private static SlaveServerThread serverThread;
+	
+	public static void stopProgram() {
+		serverThread.stopThread();
+	}
 
 	public static void main (String args[]) {
 		coord = new SlaveCoordinator();
-		SlaveServerThread serverThread = new SlaveServerThread(coord);
+		serverThread = new SlaveServerThread(coord);
 		serverThread.start();
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -46,6 +51,8 @@ public class SlaveController {
 					t.start();
 					System.out.println(jobName + " started!");
 					continue;
+				} else if (input.equals("list")) {
+					System.out.println(coord.getInfo());
 				}
 				//TODO add other command line functionality
 			} catch (IOException e) {
